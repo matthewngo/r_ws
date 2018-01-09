@@ -1,0 +1,6 @@
+
+laser_node:
+  serial_port: /dev/lidar_hokuyo
+
+imu_node:
+  port: /dev/imu

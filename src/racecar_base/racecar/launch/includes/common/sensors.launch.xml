@@ -1,0 +1,23 @@
+<!-- -*- mode: XML -*- -->
+<launch>
+  <arg name="racecar_version" />
+  <arg name="sensors_config"
+       default="$(find racecar)/config/$(arg racecar_version)/sensors.yaml" />
+
+  <rosparam file="$(arg sensors_config)" command="load" />
+
+
+  <include file="$(find realsense_camera)/launch/zr300_nodelet_default.launch" >
+  </include>
+<!--
+  <node name="delay_f200_camera_launch" pkg="realsense_camera" type="delay_f200_nodelet_default.sh" output="screen"/>
+-->
+  <node pkg="urg_node" type="urg_node" name="laser_node" >
+  </node>
+
+<!-- Need to reconfigure laser, min_angle is incorrect -->
+  <node pkg="racecar" type="hokuyo_reconfigure.py" name="hokuyo_reconfigure">
+  </node>
+
+  <node pkg="razor_imu_9dof" type="imu_node.py" name="imu_node" />
+</launch>
