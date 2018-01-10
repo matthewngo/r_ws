@@ -6,14 +6,14 @@ from ackermann_msgs.msg import AckermannDriveStamped
 
 BAG_TOPIC = 'vesc/low_level/ackermann_cmd_mux/input/teleop'# Name of the topic that should be extracted from the bag
 PUB_TOPIC = '/vesc/high_level/ackermann_cmd_mux/input/nav_0'
-PUB_RATE = 10# The rate at which messages should be published
+PUB_RATE = 20# The rate at which messages should be published
 
 def follow_bag(bag_path, follow_backwards=False):
 	#pass
         bag = rosbag.Bag(bag_path)
         pub = rospy.Publisher(PUB_TOPIC, AckermannDriveStamped, queue_size=10)
         r = rospy.Rate(PUB_RATE)
-        for topic, msg, t in bag.read_messages():
+        for topic, msg, t in bag.read_messages(BAG_TOPIC):
             pub.publish(msg)
             print msg
             r.sleep()
