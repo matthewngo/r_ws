@@ -1,4 +1,8 @@
 <launch>
 	<!-- Launch an ApplyFilter node and pass any necessary parameters -->
-
+                <param name="filter_path" value="/home/mvn3/r_ws/src/lab0/data/filter1.csv" />
+                <param name="sub_topic" value="/camera/color/image_raw" />
+                <param name="pub_topic" value="/camera/color/filtered_img" />
+                <param name="fast_convolve" value="True" />
+                <node name="filter" pkg="lab0" type="ApplyFilter.py" />
 </launch>
