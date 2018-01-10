@@ -1,5 +1,5 @@
 <launch>
 		<!-- Launch a BagFollower node and pass any necessary parameters -->
-                <param name="bag_file" value="test.bag" />
+                <param name="bag_file" value="/home/mvn3/r_ws/src/lab0/launch/figure8.bag" />
                 <node name="follow" pkg="lab0" type="BagFollower.py" /> 
 </launch>
