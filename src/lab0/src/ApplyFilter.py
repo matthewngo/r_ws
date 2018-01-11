@@ -25,24 +25,23 @@ class Filter:
 
 	def apply_filter_cb(self, msg):
 		# Apply the filter to the incoming image and publish the result
-		cv = self.converter.imgmsg_to_cv2(msg)
+		cv = self.bridge.imgmsg_to_cv2(msg)
 		result_cv = np.zeros([cv.shape[0], cv.shape[1], cv.shape[2]])
+                
+                # Fast convolve method
                 if self.fast_convolve:
-			result_cv[:,:,2] = ndimage.filters.convolve(cv[:,:,0], self.filter_array)
-			result_cv[:,:,1] = ndimage.filters.convolve(cv[:,:,1], self.filter_array)
 			result_cv[:,:,0] = ndimage.filters.convolve(cv[:,:,2], self.filter_array)
-		else:
+			result_cv[:,:,1] = ndimage.filters.convolve(cv[:,:,1], self.filter_array)
+			result_cv[:,:,2] = ndimage.filters.convolve(cv[:,:,0], self.filter_array)
+		# For loop method
+                else:
 			for i in range(0, cv.shape[0] - self.filter_array.shape[0]):
 				for j in range(0, cv.shape[1] - self.filter_array.shape[1]):
 					total = [0, 0, 0]
 					for x in range(0, self.filter_array.shape[0]):
 						for y in range(0, self.filter_array.shape[1]):
-							total[0] += cv[i+x, j+y, 0] * self.filter_array[x, y]
-							total[1] += cv[i+x, j+y, 1] * self.filter_array[x, y]
-							total[2] += cv[i+x, j+y, 2] * self.filter_array[x, y]
-					result_cv[i+1, j+1, 0] = total[0]
-					result_cv[i+1, j+1, 1] = total[1]
-					result_cv[i+1, j+1, 2] = total[2]
+                                                        total[:] += cv[i+x, j+y, :] * self.filter_array[x,y]
+                                        result_cv[i+1, j+1, :] = total[:]
 					
 		result_cv = result_cv.astype(np.uint8)
 		result_msg = self.bridge.cv2_to_imgmsg(result_cv)
@@ -54,7 +53,7 @@ if __name__ == '__main__':
 	filter_path = rospy.get_param("filter_path") #The path to the csv file containing the filter
 	sub_topic = rospy.get_param("subscriber") # The image topic to be subscribed to
 	pub_topic = rospy.get_param("publisher") # The topic to publish filtered images to
-	fast_convolve = rospy.get_param("fast_convolve') # Whether or not the nested for loop or Scipy's convolve method should be used for applying the filter
+	fast_convolve = rospy.get_param("fast_convolve") # Whether or not the nested for loop or Scipy's convolve method should be used for applying the filter
 
 	rospy.init_node('apply_filter', anonymous=True)
 	

@@ -1,6 +1,6 @@
 <launch>
 	<!-- Launch an ApplyFilter node and pass any necessary parameters -->
-                <param name="filter_path" value="/home/mvn3/r_ws/src/lab0/data/filter1.csv" />
+                <param name="filter_path" value="/home/mvn3/r_ws/src/lab0/data/filter2.csv" />
                 <param name="subscriber" value="/camera/color/image_raw" />
                 <param name="publisher" value="/camera/color/filtered_img" />
                 <param name="fast_convolve" value="True" />
