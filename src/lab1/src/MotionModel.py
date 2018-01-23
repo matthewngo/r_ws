@@ -33,6 +33,11 @@ class OdometryMotionModel:
       control = [curr_pose[0] - self.last_pose[0],
                  curr_pose[1] - self.last_pose[1],
                  curr_pose[2] - self.last_pose[2]]
+      # adding noise
+      control[0] += np.random.normal(0, 1)
+      control[1] += np.random.normal(0, 1)
+      control[2] += np.random.normal(0, 1)
+
     
       self.apply_motion_model(self.particles, control)
 
@@ -42,8 +47,10 @@ class OdometryMotionModel:
   def apply_motion_model(self, proposal_dist, control):
     # Update the proposal distribution by applying the control to each particle
     # YOUR CODE HERE
-    # add the noise here: previous pose + (delta_x + rand_x, delta_y + rand_y, delta_theta + rand_theta) ==> new pose
-    pass
+    for row in proposal_dist:
+      row[0] += control[0]
+      row[1] += control[1]
+      row[2] += control[2]
     
 class KinematicMotionModel:
 
@@ -84,6 +91,9 @@ class KinematicMotionModel:
     curr_speed = (msg.state.speed - self.SPEED_TO_ERPM_OFFSET) / self.SPEED_TO_ERPM_GAIN
     curr_steering_angle = (self.last_servo_cmd - self.STEERING_TO_SERVO_OFFSET) / self.STEERING_TO_SERVO_GAIN
     dt = msg.header.stamp - self.last_vesc_stamp
+
+    curr_speed += np.random.normal(0, 1)
+    curr_steering_angle += np.random.normal(0, 1)
     
     self.apply_motion_model(proposal_dist=self.particles, control=[curr_speed, curr_steering_angle, dt])
     self.last_vesc_stamp = msg.header.stamp
@@ -91,8 +101,15 @@ class KinematicMotionModel:
     
   def apply_motion_model(self, proposal_dist, control):
     # Update the proposal distribution by applying the control to each particle
-    # YOUR CODE HERE
-    pass
+    
+    for row in proposal_dist:
+      delta_x = control[0] * np.cos(row[2])
+      delta_y = control[0] * np.sin(row[2])
+      beta = control[1] / 2
+      delta_theta = (control[0] / 0.25) * np.sin(2 * beta)
+      row[0] += delta_x
+      row[1] += delta_y
+      row[2] += delta_theta
     
 if __name__ == '__main__':
   pass
