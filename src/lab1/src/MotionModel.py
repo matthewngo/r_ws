@@ -18,25 +18,25 @@ class OdometryMotionModel:
     
   def motion_cb(self, msg):
     self.state_lock.acquire()
+
+    # initialize pose as np.ndarray with [x, y, theta]
+    curr_pose = np.array([msg.pose.pose.position.x,
+                          msg.pose.pose.position.y,
+                          msg.pose.pose.orientation.y])
       
     if isinstance(self.last_pose, np.ndarray):
       
       # Compute the control from the msg and last_pose
       # YOUR CODE HERE
       # deterministic, get the control (delta_x, delta_y, delta_theta) from msg - last_pose
-
-      prev = last_pose.pose
-      curr = msg.pose
-      control = None
-      if prev is None:
-        control = (curr.position.x, curr.position.y, curr.orientation.y)
-      else:
-        #assuming rotation is around the y-axis and we're in a flat 2D world
-        control = (curr.position.x - prev.position.x, curr.position.y - prev.position.y, curr.orientation.y - prev.orientation.y)
+      # assuming rotation is around the y-axis and we're in a flat 2D world
+      control = (curr_pose[0] - self.last_pose[0],
+                 curr_pose[1] - self.last_pose[1],
+                 curr_pose[2] - self.last_pose[2])
     
       self.apply_motion_model(self.particles, control)
-    
-    self.last_pose = curr
+
+    self.last_pose = curr_pose
     self.state_lock.release()
     
   def apply_motion_model(self, proposal_dist, control):
