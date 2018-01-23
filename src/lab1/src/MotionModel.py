@@ -23,7 +23,12 @@ class OdometryMotionModel:
       
       # Compute the control from the msg and last_pose
       # YOUR CODE HERE
-      
+      # deterministic, get the control (delta_x, delta_y, delta_theta) from msg - last_pose
+
+      prev = last_pose.pose.pose
+      curr = msg.pose.pose
+      control = (curr.position.x - prev.position.x, curr.position.y - prev.position.y, curr.orientation.y - prev.orientation.y) #assuming rotation is around the y-axis and we're in a flat 2D world
+    
       self.apply_motion_model(self.particles, control)
 
     self.last_pose = pose
@@ -32,6 +37,7 @@ class OdometryMotionModel:
   def apply_motion_model(self, proposal_dist, control):
     # Update the proposal distribution by applying the control to each particle
     # YOUR CODE HERE
+    # add the noise here: previous pose + (delta_x + rand_x, delta_y + rand_y, delta_theta + rand_theta) ==> new pose
     pass
     
 class KinematicMotionModel:
