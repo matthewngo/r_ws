@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
+import scipy
 import rospy
 import range_libc
 import time
@@ -51,7 +52,15 @@ class SensorModel:
     # Keep efficiency in mind, including by caching certain things that won't change across future iterations of this callback
   
     # YOUR CODE HERE
-    
+    obs = [0, 0]
+    obs[0] = np.array(msg.ranges[::self.LASER_RAY_STEP])
+
+    if self.angles_downsampled is None:
+      self.angles_downsampled = np.arange(msg.angle_min, msg.angle_max, msg.angle_increment * self.LASER_RAY_STEP, np.float32)  
+
+    obs[1] = self.angles_downsampled
+    obs = tuple(obs)
+ 
     self.apply_sensor_model(self.particles, obs, self.weights)
     self.weights /= np.sum(self.weights)
     
@@ -67,7 +76,18 @@ class SensorModel:
 
     # Populate sensor model table as specified
     # Note that the row corresponds to the observed measurement and the column corresponds to the expected measurement
-    # YOUR CODE HERE  
+    # YOUR CODE HERE 
+    for row in range(sensor_model_table.shape[0]):
+      for column in range (sensor_model_table.shape[1]):
+        probs = np.array([0, 0, 0, 0])
+        probs[0] = scipy.stats.norm(column, row, 1)
+        probs[1] = scipy.stats.expon(column, 0, 1)
+        if column == max_range_px:
+          probs[2] = 1
+        probs[3] = 1 / max_range_px
+        weights = np.array([0.75, 0.1, 0.1, 0.05])
+        sensor_model_table[row][column] = np.dot(probs, weights)
+         
     return sensor_model_table
 
   def apply_sensor_model(self, proposal_dist, obs, weights):

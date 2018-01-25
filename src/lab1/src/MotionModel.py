@@ -80,6 +80,7 @@ class KinematicMotionModel:
     self.state_lock.acquire()
     
     if self.last_servo_cmd is None:
+      self.state_lock.release()
       return
 
     if self.last_vesc_stamp is None:
@@ -105,8 +106,8 @@ class KinematicMotionModel:
     for row in proposal_dist:
       delta_x = control[0] * np.cos(row[2])
       delta_y = control[0] * np.sin(row[2])
-      beta = control[1] / 2
-      delta_theta = (control[0] / 0.25) * np.sin(2 * beta)
+      beta = np.arctan(0.5 * np.tan(control[1]))
+      delta_theta = (control[0] / 0.33) * np.sin(2 * beta)
       row[0] += delta_x
       row[1] += delta_y
       row[2] += delta_theta
