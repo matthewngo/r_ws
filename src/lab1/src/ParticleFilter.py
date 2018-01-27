@@ -41,8 +41,8 @@ class ParticleFilter():
     # Will be used to initialize particles and SensorModel
     # Store map in variable called 'map_msg'
     # YOUR CODE HERE
-    
-    
+    self.map_msg = rospy.ServiceProxy('static_map', GetMap); 
+    print "MSG:" + self.map_msg
     
     
     

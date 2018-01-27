@@ -17,6 +17,7 @@ class ReSampler:
     self.state_lock.acquire()
     # Use np.random.choice to re-sample 
     # YOUR CODE HERE
+    self.particles = np.random.choice(self.particles, len(self.particles), true, self.weights);
     
     self.state_lock.release()
   
@@ -24,6 +25,18 @@ class ReSampler:
     self.state_lock.acquire()
     # Implement low variance re-sampling
     # YOUR CODE HERE
-    
+    new_particles = []
+    num_particles = len(self.particles)
+    rand_num = np.random.random_sample()/num_particles
+    curr_weight = self.weights[0]
+    index = 0
+    for particle in range(num_particles):
+      u = rand_num + (particle-1)/num_particles
+      while (u < curr_weight):
+        index = index + 1
+        curr_weight = curr_weight + self.weight[index]
+        new_particles.append(self.particles[index])  
+    self.particles = new_particles
+
     self.state_lock.release()
 
