@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
-import scipy
+from scipy import stats
 import rospy
 import range_libc
 import time
@@ -10,11 +10,11 @@ from threading import Lock
 THETA_DISCRETIZATION = 112 # Discretization of scanning angle
 INV_SQUASH_FACTOR = 2.2    # Factor for helping the weight distribution to be less peaked
 
-Z_SHORT =   # Weight for short reading
-Z_MAX =     # Weight for max reading
-Z_RAND =    # Weight for random reading
-SIGMA_HIT = # Noise value for hit reading
-Z_HIT =     # Weight for hit reading
+Z_SHORT = 0.1  # Weight for short reading
+Z_MAX = 0.1    # Weight for max reading
+Z_RAND = 0.05   # Weight for random reading
+SIGMA_HIT = 1 # Noise value for hit reading
+Z_HIT = 0.75    # Weight for hit reading
 
 class SensorModel:
 	
@@ -53,12 +53,12 @@ class SensorModel:
   
     # YOUR CODE HERE
     obs = [0, 0]
-    obs[0] = np.array(msg.ranges[::self.LASER_RAY_STEP])
+    obs[0] = np.array(msg.ranges[::self.LASER_RAY_STEP], dtype=np.float32)
 
-    if self.angles_downsampled is None:
-      self.angles_downsampled = np.arange(msg.angle_min, msg.angle_max, msg.angle_increment * self.LASER_RAY_STEP, np.float32)  
+    if self.downsampled_angles is None:
+      self.downsampled_angles = np.arange(msg.angle_min, msg.angle_max, msg.angle_increment * self.LASER_RAY_STEP, np.float32)  
 
-    obs[1] = self.angles_downsampled
+    obs[1] = self.downsampled_angles
     obs = tuple(obs)
  
     self.apply_sensor_model(self.particles, obs, self.weights)
@@ -80,8 +80,8 @@ class SensorModel:
     for row in range(sensor_model_table.shape[0]):
       for column in range (sensor_model_table.shape[1]):
         probs = np.array([0, 0, 0, 0])
-        probs[0] = scipy.stats.norm(column, row, 1)
-        probs[1] = scipy.stats.expon(column, 0, 1)
+        probs[0] = stats.norm.pdf(column, row, 1)
+        probs[1] = stats.expon.pdf(column, 0, 1)
         if column == max_range_px:
           probs[2] = 1
         probs[3] = 1 / max_range_px

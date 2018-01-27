@@ -17,7 +17,9 @@ class ReSampler:
     self.state_lock.acquire()
     # Use np.random.choice to re-sample 
     # YOUR CODE HERE
-    self.particles = np.random.choice(self.particles, len(self.particles), true, self.weights);
+    indices = range(self.particles.shape[0])
+    picked_indices = np.random.choice(indices, len(self.particles), True, self.weights);
+    self.particles = np.take(self.particles, picked_indices)
     
     self.state_lock.release()
   
