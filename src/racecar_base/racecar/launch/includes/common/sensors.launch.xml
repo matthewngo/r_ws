@@ -15,9 +15,5 @@
   <node pkg="urg_node" type="urg_node" name="laser_node" >
   </node>
 
-<!-- Need to reconfigure laser, min_angle is incorrect -->
-  <node pkg="racecar" type="hokuyo_reconfigure.py" name="hokuyo_reconfigure">
-  </node>
-
   <node pkg="razor_imu_9dof" type="imu_node.py" name="imu_node" />
 </launch>
