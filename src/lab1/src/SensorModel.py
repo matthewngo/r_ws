@@ -62,7 +62,7 @@ class SensorModel:
     obs = tuple(obs)
  
     self.apply_sensor_model(self.particles, obs, self.weights)
-    #print (self.weights)
+    # print (self.weights)
     self.weights /= np.sum(self.weights)
     
     self.last_laser = msg
