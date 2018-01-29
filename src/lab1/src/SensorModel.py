@@ -62,6 +62,7 @@ class SensorModel:
     obs = tuple(obs)
  
     self.apply_sensor_model(self.particles, obs, self.weights)
+    #print (self.weights)
     self.weights /= np.sum(self.weights)
     
     self.last_laser = msg
@@ -77,17 +78,28 @@ class SensorModel:
     # Populate sensor model table as specified
     # Note that the row corresponds to the observed measurement and the column corresponds to the expected measurement
     # YOUR CODE HERE 
+    probs_normal = np.zeros([table_width, table_width])
+    probs_expon = np.zeros([table_width, table_width])
+    probs_max = np.zeros([table_width, table_width])
+    probs_uniform = np.zeros([table_width, table_width])
     for row in range(sensor_model_table.shape[0]):
       for column in range (sensor_model_table.shape[1]):
-        probs = np.array([0, 0, 0, 0])
-        probs[0] = stats.norm.pdf(column, row, 1)
-        probs[1] = stats.expon.pdf(column, 0, 1)
+        probs_normal[row, column] = stats.norm.pdf(row, column, 1)
+        probs_expon[row, column] = stats.expon.pdf(row, 0, 1)
         if column == max_range_px:
-          probs[2] = 1
-        probs[3] = 1 / max_range_px
-        weights = np.array([0.75, 0.1, 0.1, 0.05])
-        sensor_model_table[row][column] = np.dot(probs, weights)
-         
+          probs_max[row, column] = 1
+        probs_uniform[row, column] = 1 / max_range_px
+
+    probs_normal = probs_normal / probs_normal.sum(axis=0, keepdims=1)
+    probs_expon = probs_expon / probs_expon.sum(axis=0, keepdims=1)
+
+    weights = np.array([0.75, 0.1, 0.1, 0.05])
+
+    for row in range(sensor_model_table.shape[0]):
+      for column in range (sensor_model_table.shape[1]):
+        sensor_model_table[row, column] = (probs_normal[row, column] * weights[0]) + (probs_expon[row, column] * weights[1]) + (probs_max[row, column] * weights[2]) + (probs_uniform[row, column] * weights[3])
+
+    sensor_model_table.tofile("/home/mvn3/table.txt", sep=",")     
     return sensor_model_table
 
   def apply_sensor_model(self, proposal_dist, obs, weights):
