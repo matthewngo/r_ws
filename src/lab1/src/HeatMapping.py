@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 from PIL import Image
+import math
 import rospy
 import rosbag
 import numpy as np
@@ -21,14 +22,12 @@ from MotionModel import OdometryMotionModel, KinematicMotionModel
 # should be in meters
 SPATIAL_STEP = 1
 # should be in radians
-ANGLE_STEP = 120
+ANGLE_STEP = 180
 PIXELS_TO_METERS = 0.02
 
 # get the map
 map_msg = rospy.ServiceProxy('static_map', GetMap)().map
 map_img = Image.open('../maps/sieg_floor3.pgm')
-print map_img.width
-'''
 
 # generate particles from open locations on map
 particles = []
@@ -36,7 +35,7 @@ for i in range(0, 3200, SPATIAL_STEP):
   for j in range(0, 3200, SPATIAL_STEP):
     if map_img.getpixel((i, j)) > 250:
       for k in range(0, 360, ANGLE_STEP):
-        particles.append([i, j, k])
+        particles.append([i, j, (k / 180.0) * math.pi])
 particles = np.array(particles)
 
 # initialize weights to equal probability summing to one (1 / NUM_PARTICLES)
@@ -53,17 +52,22 @@ for topic, msg, t in bag.read_messages(topics=['/scan']):
 lidar_info = (lidar_ranges, lidar_angles)
 bag.close()
 
+# convert pixel values to meters for use in sensor model
+particles_meters = particles[:]
+for i in range(len(particles_meters)):
+  particles_meters[i][0] = particles_meters[i][0] * PIXELS_TO_METERS
+  particles_meters[i][1] = particles_meters[i][1] * PIXELS_TO_METERS
 
 # create and apply sensor model
-sensor_model = SensorModel(map_msg, particles, weights)
+sensor_model = SensorModel(map_msg, particles_meters, weights)
 sensor_model.precompute_sensor_model(max_range_px=280)
-sensor_model.apply_sensor_model(particles, lidar_info, weights)
+sensor_model.apply_sensor_model(particles_meters, lidar_info, weights)
  
 # combine heatmapping with original map and display
 for i in range(len(particles)):
   particle = particles[i]
   weight = weights[i]
-  map_img.putpixel((particle[0], particle[1]), int(weight * len(weights) * 60))
+  map_img.putpixel((particle[0], particle[1]), 255 - int(weight * len(weights) * 128))
 
 map_img.show()
-'''
+
