@@ -105,6 +105,13 @@ class ParticleFilter():
     self.state_lock.acquire()
     
     # YOUR CODE HERE
+    x = msg.pose.pose.position.x
+    y = msg.pose.pose.position.y
+    t = msg.pose.pose.orientation.y
+    for i in range(self.MAX_PARTICLES):
+       self.particles[i][0] = x + np.random.normal(0, 1)
+       self.particles[i][1] = y + np.random.normal(0, 1)
+       self.particles[i][2] = t + np.random.normal(0, 1)
     
     self.state_lock.release()
     
