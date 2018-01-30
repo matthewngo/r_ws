@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import HeatMapping as hm
 import rospy 
 import numpy as np
 import time
@@ -157,7 +158,8 @@ class ParticleFilter():
 if __name__ == '__main__':
   rospy.init_node("particle_filter", anonymous=True) # Initialize the node
   pf = ParticleFilter() # Create the particle filter
-  
+  hm.main()
+
   while not rospy.is_shutdown(): # Keep going until we kill it
     # Callbacks are running in separate threads
     if pf.sensor_model.do_resample: # Check if the sensor model says it's time to resample
