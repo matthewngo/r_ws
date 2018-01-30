@@ -81,14 +81,14 @@ class SensorModel:
     probs_normal = np.zeros([table_width, table_width])
     probs_expon = np.zeros([table_width, table_width])
     probs_max = np.zeros([table_width, table_width])
-    probs_uniform = np.zeros([table_width, table_width])
+    probs_uniform = np.zeros([table_width, table_width], dtype=np.float64)
     for row in range(sensor_model_table.shape[0]):
       for column in range (sensor_model_table.shape[1]):
         probs_normal[row, column] = stats.norm.pdf(row, column, 1)
         probs_expon[row, column] = stats.expon.pdf(row, 0, 1)
-        if column == max_range_px:
+        if row == max_range_px:
           probs_max[row, column] = 1
-        probs_uniform[row, column] = 1 / max_range_px
+        probs_uniform[row, column] = np.float64(1.0) / max_range_px
 
     probs_normal = probs_normal / probs_normal.sum(axis=0, keepdims=1)
     probs_expon = probs_expon / probs_expon.sum(axis=0, keepdims=1)
@@ -99,7 +99,11 @@ class SensorModel:
       for column in range (sensor_model_table.shape[1]):
         sensor_model_table[row, column] = (probs_normal[row, column] * weights[0]) + (probs_expon[row, column] * weights[1]) + (probs_max[row, column] * weights[2]) + (probs_uniform[row, column] * weights[3])
 
-    sensor_model_table.tofile("/home/mvn3/table.txt", sep=",")     
+    print 'normal sums', probs_normal.sum(axis=0)
+    print 'expon sums', probs_expon.sum(axis=0)
+    print 'max sums', probs_max.sum(axis=0)
+    print 'uniform sums', probs_uniform.sum(axis=0)
+    print max_range_px
     return sensor_model_table
 
   def apply_sensor_model(self, proposal_dist, obs, weights):
