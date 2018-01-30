@@ -84,6 +84,7 @@ class ParticleFilter():
   # Initialize the particles to cover the map
   def initialize_global(self, map_msg):
     # YOUR CODE HERE
+    #extra credit
     pass
     
   # Publish a tf between the laser and the map
@@ -96,7 +97,7 @@ class ParticleFilter():
   # Returns the expected pose given the current particles and weights
   def expected_pose(self):
   # YOUR CODE HERE
-    pass
+    return np.mean(self.particles, axis=0)
     
   # Callback for '/initialpose' topic. RVIZ publishes a message to this topic when you specify an initial pose using its GUI
   # Reinitialize your particles and weights according to the received initial pose
@@ -125,6 +126,27 @@ class ParticleFilter():
     self.state_lock.acquire()
     
     # YOUR CODE HERE
+    self.publish_tf()
+
+    #something with self.pub_laser.publish()
+    
+    exp = PoseStamped()
+    exp.header.stamp = rospy.Time.now()
+    exp.header.frame_id = 1
+    e = self.expected_pose()
+    exp.pose = Pose(Point(e[0], e[1], 0), Quaternion(0, e[2], 0, 0))
+    self.pose_pub.publish(exp)
+
+    vizparts = PoseArray()
+    vizparts.header.stamp = rospy.Time.now()
+    vizparts.header.frame_id = 1
+    indices = range(self.particles.shape[0])
+    picked_indices = np.random.choice(indices, len(self.particles), True, self.weights);
+    for i in picked_indices:
+        p = self.particles[i]
+        ps = Pose(Point(p[0], p[1], 0), Quaternion(0, p[2], 0, 0))
+        vizparts.poses.append(ps)
+    self.particle_pub.publish(vizparts)
     
     self.state_lock.release()
   
