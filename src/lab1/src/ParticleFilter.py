@@ -84,7 +84,7 @@ class ParticleFilter():
   # Initialize the particles to cover the map
   def initialize_global(self, map_msg):
     # YOUR CODE HERE
-    #extra credit
+    #extra credit so ignore for now
     pass
     
   # Publish a tf between the laser and the map
@@ -134,7 +134,7 @@ class ParticleFilter():
     exp.header.stamp = rospy.Time.now()
     exp.header.frame_id = 1
     e = self.expected_pose()
-    exp.pose = Pose(Point(e[0], e[1], 0), Quaternion(0, e[2], 0, 0))
+    exp.pose = Pose(Point(e[0], e[1], 0), Quaternion(0, e[2], 0, 1))
     self.pose_pub.publish(exp)
 
     vizparts = PoseArray()
@@ -144,7 +144,7 @@ class ParticleFilter():
     picked_indices = np.random.choice(indices, len(self.particles), True, self.weights);
     for i in picked_indices:
         p = self.particles[i]
-        ps = Pose(Point(p[0], p[1], 0), Quaternion(0, p[2], 0, 0))
+        ps = Pose(Point(p[0], p[1], 0), Quaternion(0, p[2], 0, 1))
         vizparts.poses.append(ps)
     self.particle_pub.publish(vizparts)
     
