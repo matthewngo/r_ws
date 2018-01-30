@@ -11,7 +11,7 @@ from threading import Lock
 from vesc_msgs.msg import VescStateStamped
 from sensor_msgs.msg import LaserScan
 from nav_msgs.srv import GetMap
-from geometry_msgs.msg import PoseStamped, PoseArray, PoseWithCovarianceStamped, PointStamped
+from geometry_msgs.msg import PoseStamped, PoseArray, PoseWithCovarianceStamped, PointStamped, Point, Quaternion, Pose
 
 from ReSample import ReSampler
 from SensorModel import SensorModel
@@ -92,7 +92,7 @@ class ParticleFilter():
   def publish_tf(self,pose):
   # Use self.pub_tf
   # YOUR CODE HERE
-    pass
+    self.pub_tf.sendTransform((pose[0], pose[1], 0),tf.transformations.quaternion_from_euler(0, 0, pose[2]),rospy.Time.now(),"base_link","map")
 
   # Returns the expected pose given the current particles and weights
   def expected_pose(self):
@@ -108,18 +108,19 @@ class ParticleFilter():
     # YOUR CODE HERE
     x = msg.pose.pose.position.x
     y = msg.pose.pose.position.y
-    t = msg.pose.pose.orientation.y
+    q = np.array([msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w])
+    t = tf.transformations.euler_from_quaternion(q)
     for i in range(self.MAX_PARTICLES):
-       self.particles[i][0] = x + np.random.normal(0, 1)
-       self.particles[i][1] = y + np.random.normal(0, 1)
-       self.particles[i][2] = t + np.random.normal(0, 1)
+       self.particles[i][0] = x + np.random.normal(0, 0.1)
+       self.particles[i][1] = y + np.random.normal(0, 0.1)
+       self.particles[i][2] = t[2] + np.random.normal(0, 0.1)
     
     self.state_lock.release()
     
   # Visualize the current state of the filter
   # (1) Publishes a tf between the map and the laser. Necessary for visualizing the laser scan in the map
   # (2) Publishes the most recent laser measurement. Note that the frame_id of this message should be the child_frame_id of the tf from (1)
-  # (3) Publishes a PoseStamped message indicating the expected pose of the car
+  # (3) Publishes a PoseStampedw message indicating the expected pose of the car
   # (4) Publishes a subsample of the particles (use self.MAX_VIZ_PARTICLES). 
   #     Sample so that particles with higher weights are more likely to be sampled.
   def visualize(self):
@@ -132,19 +133,21 @@ class ParticleFilter():
     
     exp = PoseStamped()
     exp.header.stamp = rospy.Time.now()
-    exp.header.frame_id = 1
+    exp.header.frame_id = "base_link"
     e = self.expected_pose()
-    exp.pose = Pose(Point(e[0], e[1], 0), Quaternion(0, e[2], 0, 1))
+    q = tf.transformations.quaternion_from_euler(0, 0, e[2])
+    exp.pose = Pose(Point(e[0], e[1], 0), Quaternion(*q))
     self.pose_pub.publish(exp)
 
     vizparts = PoseArray()
     vizparts.header.stamp = rospy.Time.now()
-    vizparts.header.frame_id = 1
+    vizparts.header.frame_id = "base_link"
     indices = range(self.particles.shape[0])
     picked_indices = np.random.choice(indices, len(self.particles), True, self.weights);
     for i in picked_indices:
         p = self.particles[i]
-        ps = Pose(Point(p[0], p[1], 0), Quaternion(0, p[2], 0, 1))
+        q = tf.transformations.quaternion_from_euler(0, 0, e[2])
+        ps = Pose(Point(p[0], p[1], 0), Quaternion(q[0], q[1], q[2], q[3]))
         vizparts.poses.append(ps)
     self.particle_pub.publish(vizparts)
     
@@ -164,6 +167,7 @@ if __name__ == '__main__':
       if pf.RESAMPLE_TYPE == "naiive":
         pf.resampler.resample_naiive()
       elif pf.RESAMPLE_TYPE == "low_variance":
+
         pf.resampler.resample_low_variance()
       else:
         print "Unrecognized resampling method: "+ pf.RESAMPLE_TYPE      

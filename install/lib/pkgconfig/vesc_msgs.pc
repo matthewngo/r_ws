@@ -1,0 +1,8 @@
+prefix=/home/mvn3/r_ws/install
+
+Name: vesc_msgs
+Description: Description of vesc_msgs
+Version: 0.0.1
+Cflags: -I/home/mvn3/r_ws/install/include
+Libs: -L/home/mvn3/r_ws/install/lib 
+Requires: std_msgs message_runtime

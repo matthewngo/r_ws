@@ -270,43 +270,17 @@ _catkin_empty_exported_target/fast:
 .PHONY : _catkin_empty_exported_target/fast
 
 #=============================================================================
-# Target rules for targets named std_msgs_generate_messages_nodejs
+# Target rules for targets named vesc_msgs_generate_messages
 
 # Build rule for target.
-std_msgs_generate_messages_nodejs: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 std_msgs_generate_messages_nodejs
-.PHONY : std_msgs_generate_messages_nodejs
+vesc_msgs_generate_messages: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 vesc_msgs_generate_messages
+.PHONY : vesc_msgs_generate_messages
 
 # fast build rule for target.
-std_msgs_generate_messages_nodejs/fast:
-	$(MAKE) -f lab0/CMakeFiles/std_msgs_generate_messages_nodejs.dir/build.make lab0/CMakeFiles/std_msgs_generate_messages_nodejs.dir/build
-.PHONY : std_msgs_generate_messages_nodejs/fast
-
-#=============================================================================
-# Target rules for targets named std_msgs_generate_messages_py
-
-# Build rule for target.
-std_msgs_generate_messages_py: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 std_msgs_generate_messages_py
-.PHONY : std_msgs_generate_messages_py
-
-# fast build rule for target.
-std_msgs_generate_messages_py/fast:
-	$(MAKE) -f lab0/CMakeFiles/std_msgs_generate_messages_py.dir/build.make lab0/CMakeFiles/std_msgs_generate_messages_py.dir/build
-.PHONY : std_msgs_generate_messages_py/fast
-
-#=============================================================================
-# Target rules for targets named std_msgs_generate_messages_lisp
-
-# Build rule for target.
-std_msgs_generate_messages_lisp: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 std_msgs_generate_messages_lisp
-.PHONY : std_msgs_generate_messages_lisp
-
-# fast build rule for target.
-std_msgs_generate_messages_lisp/fast:
-	$(MAKE) -f lab0/CMakeFiles/std_msgs_generate_messages_lisp.dir/build.make lab0/CMakeFiles/std_msgs_generate_messages_lisp.dir/build
-.PHONY : std_msgs_generate_messages_lisp/fast
+vesc_msgs_generate_messages/fast:
+	$(MAKE) -f racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_generate_messages.dir/build.make racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_generate_messages.dir/build
+.PHONY : vesc_msgs_generate_messages/fast
 
 #=============================================================================
 # Target rules for targets named std_msgs_generate_messages_eus
@@ -318,8 +292,177 @@ std_msgs_generate_messages_eus: cmake_check_build_system
 
 # fast build rule for target.
 std_msgs_generate_messages_eus/fast:
-	$(MAKE) -f lab0/CMakeFiles/std_msgs_generate_messages_eus.dir/build.make lab0/CMakeFiles/std_msgs_generate_messages_eus.dir/build
+	$(MAKE) -f racecar_base/vesc_msgs/CMakeFiles/std_msgs_generate_messages_eus.dir/build.make racecar_base/vesc_msgs/CMakeFiles/std_msgs_generate_messages_eus.dir/build
 .PHONY : std_msgs_generate_messages_eus/fast
+
+#=============================================================================
+# Target rules for targets named std_msgs_generate_messages_lisp
+
+# Build rule for target.
+std_msgs_generate_messages_lisp: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 std_msgs_generate_messages_lisp
+.PHONY : std_msgs_generate_messages_lisp
+
+# fast build rule for target.
+std_msgs_generate_messages_lisp/fast:
+	$(MAKE) -f racecar_base/vesc_msgs/CMakeFiles/std_msgs_generate_messages_lisp.dir/build.make racecar_base/vesc_msgs/CMakeFiles/std_msgs_generate_messages_lisp.dir/build
+.PHONY : std_msgs_generate_messages_lisp/fast
+
+#=============================================================================
+# Target rules for targets named vesc_msgs_gencpp
+
+# Build rule for target.
+vesc_msgs_gencpp: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 vesc_msgs_gencpp
+.PHONY : vesc_msgs_gencpp
+
+# fast build rule for target.
+vesc_msgs_gencpp/fast:
+	$(MAKE) -f racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_gencpp.dir/build.make racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_gencpp.dir/build
+.PHONY : vesc_msgs_gencpp/fast
+
+#=============================================================================
+# Target rules for targets named _vesc_msgs_generate_messages_check_deps_VescStateStamped
+
+# Build rule for target.
+_vesc_msgs_generate_messages_check_deps_VescStateStamped: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 _vesc_msgs_generate_messages_check_deps_VescStateStamped
+.PHONY : _vesc_msgs_generate_messages_check_deps_VescStateStamped
+
+# fast build rule for target.
+_vesc_msgs_generate_messages_check_deps_VescStateStamped/fast:
+	$(MAKE) -f racecar_base/vesc_msgs/CMakeFiles/_vesc_msgs_generate_messages_check_deps_VescStateStamped.dir/build.make racecar_base/vesc_msgs/CMakeFiles/_vesc_msgs_generate_messages_check_deps_VescStateStamped.dir/build
+.PHONY : _vesc_msgs_generate_messages_check_deps_VescStateStamped/fast
+
+#=============================================================================
+# Target rules for targets named std_msgs_generate_messages_py
+
+# Build rule for target.
+std_msgs_generate_messages_py: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 std_msgs_generate_messages_py
+.PHONY : std_msgs_generate_messages_py
+
+# fast build rule for target.
+std_msgs_generate_messages_py/fast:
+	$(MAKE) -f racecar_base/vesc_msgs/CMakeFiles/std_msgs_generate_messages_py.dir/build.make racecar_base/vesc_msgs/CMakeFiles/std_msgs_generate_messages_py.dir/build
+.PHONY : std_msgs_generate_messages_py/fast
+
+#=============================================================================
+# Target rules for targets named vesc_msgs_generate_messages_py
+
+# Build rule for target.
+vesc_msgs_generate_messages_py: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 vesc_msgs_generate_messages_py
+.PHONY : vesc_msgs_generate_messages_py
+
+# fast build rule for target.
+vesc_msgs_generate_messages_py/fast:
+	$(MAKE) -f racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_generate_messages_py.dir/build.make racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_generate_messages_py.dir/build
+.PHONY : vesc_msgs_generate_messages_py/fast
+
+#=============================================================================
+# Target rules for targets named vesc_msgs_generate_messages_eus
+
+# Build rule for target.
+vesc_msgs_generate_messages_eus: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 vesc_msgs_generate_messages_eus
+.PHONY : vesc_msgs_generate_messages_eus
+
+# fast build rule for target.
+vesc_msgs_generate_messages_eus/fast:
+	$(MAKE) -f racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_generate_messages_eus.dir/build.make racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_generate_messages_eus.dir/build
+.PHONY : vesc_msgs_generate_messages_eus/fast
+
+#=============================================================================
+# Target rules for targets named vesc_msgs_generate_messages_cpp
+
+# Build rule for target.
+vesc_msgs_generate_messages_cpp: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 vesc_msgs_generate_messages_cpp
+.PHONY : vesc_msgs_generate_messages_cpp
+
+# fast build rule for target.
+vesc_msgs_generate_messages_cpp/fast:
+	$(MAKE) -f racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_generate_messages_cpp.dir/build.make racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_generate_messages_cpp.dir/build
+.PHONY : vesc_msgs_generate_messages_cpp/fast
+
+#=============================================================================
+# Target rules for targets named _vesc_msgs_generate_messages_check_deps_VescState
+
+# Build rule for target.
+_vesc_msgs_generate_messages_check_deps_VescState: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 _vesc_msgs_generate_messages_check_deps_VescState
+.PHONY : _vesc_msgs_generate_messages_check_deps_VescState
+
+# fast build rule for target.
+_vesc_msgs_generate_messages_check_deps_VescState/fast:
+	$(MAKE) -f racecar_base/vesc_msgs/CMakeFiles/_vesc_msgs_generate_messages_check_deps_VescState.dir/build.make racecar_base/vesc_msgs/CMakeFiles/_vesc_msgs_generate_messages_check_deps_VescState.dir/build
+.PHONY : _vesc_msgs_generate_messages_check_deps_VescState/fast
+
+#=============================================================================
+# Target rules for targets named vesc_msgs_geneus
+
+# Build rule for target.
+vesc_msgs_geneus: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 vesc_msgs_geneus
+.PHONY : vesc_msgs_geneus
+
+# fast build rule for target.
+vesc_msgs_geneus/fast:
+	$(MAKE) -f racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_geneus.dir/build.make racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_geneus.dir/build
+.PHONY : vesc_msgs_geneus/fast
+
+#=============================================================================
+# Target rules for targets named vesc_msgs_generate_messages_nodejs
+
+# Build rule for target.
+vesc_msgs_generate_messages_nodejs: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 vesc_msgs_generate_messages_nodejs
+.PHONY : vesc_msgs_generate_messages_nodejs
+
+# fast build rule for target.
+vesc_msgs_generate_messages_nodejs/fast:
+	$(MAKE) -f racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_generate_messages_nodejs.dir/build.make racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_generate_messages_nodejs.dir/build
+.PHONY : vesc_msgs_generate_messages_nodejs/fast
+
+#=============================================================================
+# Target rules for targets named vesc_msgs_generate_messages_lisp
+
+# Build rule for target.
+vesc_msgs_generate_messages_lisp: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 vesc_msgs_generate_messages_lisp
+.PHONY : vesc_msgs_generate_messages_lisp
+
+# fast build rule for target.
+vesc_msgs_generate_messages_lisp/fast:
+	$(MAKE) -f racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_generate_messages_lisp.dir/build.make racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_generate_messages_lisp.dir/build
+.PHONY : vesc_msgs_generate_messages_lisp/fast
+
+#=============================================================================
+# Target rules for targets named std_msgs_generate_messages_nodejs
+
+# Build rule for target.
+std_msgs_generate_messages_nodejs: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 std_msgs_generate_messages_nodejs
+.PHONY : std_msgs_generate_messages_nodejs
+
+# fast build rule for target.
+std_msgs_generate_messages_nodejs/fast:
+	$(MAKE) -f racecar_base/vesc_msgs/CMakeFiles/std_msgs_generate_messages_nodejs.dir/build.make racecar_base/vesc_msgs/CMakeFiles/std_msgs_generate_messages_nodejs.dir/build
+.PHONY : std_msgs_generate_messages_nodejs/fast
+
+#=============================================================================
+# Target rules for targets named vesc_msgs_genlisp
+
+# Build rule for target.
+vesc_msgs_genlisp: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 vesc_msgs_genlisp
+.PHONY : vesc_msgs_genlisp
+
+# fast build rule for target.
+vesc_msgs_genlisp/fast:
+	$(MAKE) -f racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_genlisp.dir/build.make racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_genlisp.dir/build
+.PHONY : vesc_msgs_genlisp/fast
 
 #=============================================================================
 # Target rules for targets named std_msgs_generate_messages_cpp
@@ -331,8 +474,34 @@ std_msgs_generate_messages_cpp: cmake_check_build_system
 
 # fast build rule for target.
 std_msgs_generate_messages_cpp/fast:
-	$(MAKE) -f lab0/CMakeFiles/std_msgs_generate_messages_cpp.dir/build.make lab0/CMakeFiles/std_msgs_generate_messages_cpp.dir/build
+	$(MAKE) -f racecar_base/vesc_msgs/CMakeFiles/std_msgs_generate_messages_cpp.dir/build.make racecar_base/vesc_msgs/CMakeFiles/std_msgs_generate_messages_cpp.dir/build
 .PHONY : std_msgs_generate_messages_cpp/fast
+
+#=============================================================================
+# Target rules for targets named vesc_msgs_gennodejs
+
+# Build rule for target.
+vesc_msgs_gennodejs: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 vesc_msgs_gennodejs
+.PHONY : vesc_msgs_gennodejs
+
+# fast build rule for target.
+vesc_msgs_gennodejs/fast:
+	$(MAKE) -f racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_gennodejs.dir/build.make racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_gennodejs.dir/build
+.PHONY : vesc_msgs_gennodejs/fast
+
+#=============================================================================
+# Target rules for targets named vesc_msgs_genpy
+
+# Build rule for target.
+vesc_msgs_genpy: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 vesc_msgs_genpy
+.PHONY : vesc_msgs_genpy
+
+# fast build rule for target.
+vesc_msgs_genpy/fast:
+	$(MAKE) -f racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_genpy.dir/build.make racecar_base/vesc_msgs/CMakeFiles/vesc_msgs_genpy.dir/build
+.PHONY : vesc_msgs_genpy/fast
 
 #=============================================================================
 # Target rules for targets named ackermann_cmd_mux_nodelet
@@ -784,11 +953,24 @@ help:
 	@echo "... gtest"
 	@echo "... gtest_main"
 	@echo "... _catkin_empty_exported_target"
-	@echo "... std_msgs_generate_messages_nodejs"
-	@echo "... std_msgs_generate_messages_py"
-	@echo "... std_msgs_generate_messages_lisp"
+	@echo "... vesc_msgs_generate_messages"
 	@echo "... std_msgs_generate_messages_eus"
+	@echo "... std_msgs_generate_messages_lisp"
+	@echo "... vesc_msgs_gencpp"
+	@echo "... _vesc_msgs_generate_messages_check_deps_VescStateStamped"
+	@echo "... std_msgs_generate_messages_py"
+	@echo "... vesc_msgs_generate_messages_py"
+	@echo "... vesc_msgs_generate_messages_eus"
+	@echo "... vesc_msgs_generate_messages_cpp"
+	@echo "... _vesc_msgs_generate_messages_check_deps_VescState"
+	@echo "... vesc_msgs_geneus"
+	@echo "... vesc_msgs_generate_messages_nodejs"
+	@echo "... vesc_msgs_generate_messages_lisp"
+	@echo "... std_msgs_generate_messages_nodejs"
+	@echo "... vesc_msgs_genlisp"
 	@echo "... std_msgs_generate_messages_cpp"
+	@echo "... vesc_msgs_gennodejs"
+	@echo "... vesc_msgs_genpy"
 	@echo "... ackermann_cmd_mux_nodelet"
 	@echo "... ackermann_cmd_mux_gencfg"
 	@echo "... ackermann_msgs_generate_messages_py"

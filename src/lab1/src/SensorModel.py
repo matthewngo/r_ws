@@ -99,11 +99,11 @@ class SensorModel:
       for column in range (sensor_model_table.shape[1]):
         sensor_model_table[row, column] = (probs_normal[row, column] * weights[0]) + (probs_expon[row, column] * weights[1]) + (probs_max[row, column] * weights[2]) + (probs_uniform[row, column] * weights[3])
 
-    print 'normal sums', probs_normal.sum(axis=0)
-    print 'expon sums', probs_expon.sum(axis=0)
-    print 'max sums', probs_max.sum(axis=0)
-    print 'uniform sums', probs_uniform.sum(axis=0)
-    print max_range_px
+    #print 'normal sums', probs_normal.sum(axis=0)
+    #print 'expon sums', probs_expon.sum(axis=0)
+    #print 'max sums', probs_max.sum(axis=0)
+    #print 'uniform sums', probs_uniform.sum(axis=0)
+    #print max_range_px
     return sensor_model_table
 
   def apply_sensor_model(self, proposal_dist, obs, weights):

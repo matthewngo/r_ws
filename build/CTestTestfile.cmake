@@ -7,5 +7,7 @@
 subdirs(gtest)
 subdirs(racecar_base/racecar)
 subdirs(racecar_base/racecar_description)
+subdirs(racecar_base/vesc_msgs)
 subdirs(lab0)
+subdirs(lab1)
 subdirs(racecar_base/ackermann_cmd_mux)

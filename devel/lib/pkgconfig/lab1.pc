@@ -1,0 +1,8 @@
+prefix=/home/mvn3/r_ws/devel
+
+Name: lab1
+Description: Description of lab1
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/mvn3/r_ws/devel/lib 
+Requires: 

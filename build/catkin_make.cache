@@ -1,2 +1,2 @@
-lab0:racecar_base/ackermann_cmd_mux:racecar_base/racecar:racecar_base/racecar_description
+lab0:lab1:racecar_base/ackermann_cmd_mux:racecar_base/racecar:racecar_base/racecar_description:racecar_base/vesc_msgs
 -DCATKIN_DEVEL_PREFIX=/home/mvn3/r_ws/devel -DCMAKE_INSTALL_PREFIX=/home/mvn3/r_ws/install -G Unix Makefiles
