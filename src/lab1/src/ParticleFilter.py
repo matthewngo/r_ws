@@ -126,7 +126,7 @@ class ParticleFilter():
     self.state_lock.acquire()
     
     # YOUR CODE HERE
-    self.publish_tf()
+    self.publish_tf(self.expected_pose())
 
     #something with self.pub_laser.publish()
     
