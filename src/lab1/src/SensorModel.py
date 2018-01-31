@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
 import numpy as np
-from scipy import stats
+#from scipy import stats
 import rospy
 import range_libc
 import time
 from threading import Lock
+import math
 
 THETA_DISCRETIZATION = 112 # Discretization of scanning angle
 INV_SQUASH_FACTOR = 2.2    # Factor for helping the weight distribution to be less peaked
@@ -61,9 +62,12 @@ class SensorModel:
     obs[1] = self.downsampled_angles
     obs = tuple(obs)
  
+    print(self.weights)
     self.apply_sensor_model(self.particles, obs, self.weights)
-    # print (self.weights)
+    print(self.weights)
     self.weights /= np.sum(self.weights)
+    print(self.weights)
+    print(" \n")
     
     self.last_laser = msg
     self.do_resample = True
@@ -84,8 +88,8 @@ class SensorModel:
     probs_uniform = np.zeros([table_width, table_width], dtype=np.float64)
     for row in range(sensor_model_table.shape[0]):
       for column in range (sensor_model_table.shape[1]):
-        probs_normal[row, column] = stats.norm.pdf(row, column, 1)
-        probs_expon[row, column] = stats.expon.pdf(row, 0, 1)
+        probs_normal[row, column] = (1.0/math.sqrt(2*math.pi*0.5)) * math.exp((row-column)*(row-column)/(-2.0*0.5)) #stats.norm.pdf(row, column, 1)
+        probs_expon[row, column] = 1.0 * math.exp(-1.0 * row) #stats.expon.pdf(row, 0, 1)
         if row == max_range_px:
           probs_max[row, column] = 1
         probs_uniform[row, column] = np.float64(1.0) / max_range_px
@@ -93,11 +97,11 @@ class SensorModel:
     probs_normal = probs_normal / probs_normal.sum(axis=0, keepdims=1)
     probs_expon = probs_expon / probs_expon.sum(axis=0, keepdims=1)
 
-    weights = np.array([0.75, 0.1, 0.1, 0.05])
+    wts = np.array([0.75, 0.1, 0.1, 0.05])
 
     for row in range(sensor_model_table.shape[0]):
       for column in range (sensor_model_table.shape[1]):
-        sensor_model_table[row, column] = (probs_normal[row, column] * weights[0]) + (probs_expon[row, column] * weights[1]) + (probs_max[row, column] * weights[2]) + (probs_uniform[row, column] * weights[3])
+        sensor_model_table[row, column] = (probs_normal[row, column] * wts[0]) + (probs_expon[row, column] * wts[1]) + (probs_max[row, column] * wts[2]) + (probs_uniform[row, column] * wts[3])
 
     #print 'normal sums', probs_normal.sum(axis=0)
     #print 'expon sums', probs_expon.sum(axis=0)
@@ -120,6 +124,8 @@ class SensorModel:
     self.queries[:,:] = proposal_dist[:,:]
 
     self.range_method.calc_range_repeat_angles(self.queries, obs_angles, self.ranges)
+
+    print(weights)
 
     # Evaluate the sensor model on the GPU
     self.range_method.eval_sensor_model(obs_ranges, self.ranges, weights, num_rays, proposal_dist.shape[0])

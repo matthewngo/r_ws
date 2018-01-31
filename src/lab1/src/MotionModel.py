@@ -3,6 +3,8 @@
 import rospy
 import numpy as np
 import utils as Utils
+import tf.transformations
+import tf
 from std_msgs.msg import Float64
 from threading import Lock
 
@@ -20,9 +22,11 @@ class OdometryMotionModel:
     self.state_lock.acquire()
 
     # initialize pose as np.ndarray with [x, y, theta]
+    q = np.array([msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w])
+    t = tf.transformations.euler_from_quaternion(q)
     curr_pose = np.array([msg.pose.pose.position.x,
                           msg.pose.pose.position.y,
-                          msg.pose.pose.orientation.y])
+                          t[2]])
       
     if isinstance(self.last_pose, np.ndarray):
       
@@ -87,7 +91,7 @@ class KinematicMotionModel:
     # YOUR CODE HERE
     curr_speed = (msg.state.speed - self.SPEED_TO_ERPM_OFFSET) / self.SPEED_TO_ERPM_GAIN
     curr_steering_angle = (self.last_servo_cmd - self.STEERING_TO_SERVO_OFFSET) / self.STEERING_TO_SERVO_GAIN
-    dt = msg.header.stamp - self.last_vesc_stamp
+    dt = (msg.header.stamp - self.last_vesc_stamp).to_sec()
     
     self.apply_motion_model(proposal_dist=self.particles, control=[curr_speed, curr_steering_angle, dt])
     self.last_vesc_stamp = msg.header.stamp
@@ -97,10 +101,10 @@ class KinematicMotionModel:
     # Update the proposal distribution by applying the control to each particle
     
     for row in proposal_dist:
-      delta_x = (control[0]+np.random.normal(0, 0.1)) * np.cos(row[2])
-      delta_y = (control[0]+np.random.normal(0, 0.1)) * np.sin(row[2])
+      delta_x = (control[0]+np.random.normal(0, 0.1)) * np.cos(row[2]) * control[2]
+      delta_y = (control[0]+np.random.normal(0, 0.1)) * np.sin(row[2]) * control[2]
       beta = np.arctan(0.5 * np.tan(control[1]+np.random.normal(0, 0.1)))
-      delta_theta = ((control[0]+np.random.normal(0, 0.1)) / 0.33) * np.sin(2 * beta)
+      delta_theta = ((control[0]+np.random.normal(0, 0.1)) / 0.33) * np.sin(2 * beta) * control[2]
       row[0] += delta_x
       row[1] += delta_y
       row[2] += delta_theta

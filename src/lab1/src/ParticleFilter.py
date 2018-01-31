@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import HeatMapping as hm
+#import HeatMapping as hm
 import rospy 
 import numpy as np
 import time
@@ -12,6 +12,7 @@ from threading import Lock
 from vesc_msgs.msg import VescStateStamped
 from sensor_msgs.msg import LaserScan
 from nav_msgs.srv import GetMap
+from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseStamped, PoseArray, PoseWithCovarianceStamped, PointStamped, Point, Quaternion, Pose
 
 from ReSample import ReSampler
@@ -22,8 +23,11 @@ from MotionModel import OdometryMotionModel, KinematicMotionModel
 class ParticleFilter():
 
   def __init__(self):
-    self.MAX_PARTICLES = int(rospy.get_param("~max_particles")) # The maximum number of particles
-    self.MAX_VIZ_PARTICLES = int(rospy.get_param("~max_viz_particles")) # The maximum number of particles to visualize
+    ###self.MAX_PARTICLES = int(rospy.get_param("~max_particles")) # The maximum number of particles
+    ###self.MAX_VIZ_PARTICLES = int(rospy.get_param("~max_viz_particles")) # The maximum number of particles to visualize
+
+    self.MAX_PARTICLES = 100
+    self.MAX_VIZ_PARTICLES = 100
 
     self.particle_indices = np.arange(self.MAX_PARTICLES)
     self.particles = np.zeros((self.MAX_PARTICLES,3)) # Numpy matrix of dimension MAX_PARTICLES x 3
@@ -69,6 +73,7 @@ class ParticleFilter():
     self.laser_sub = rospy.Subscriber(rospy.get_param("~scan_topic", "/scan"), LaserScan, self.sensor_model.lidar_cb, queue_size=1)
     
     self.MOTION_MODEL_TYPE = rospy.get_param("~motion_model", "kinematic") # Whether to use the odometry or kinematics based motion model
+    ###self.MOTION_MODEL_TYPE = "odometry"
     if self.MOTION_MODEL_TYPE == "kinematic":
       self.motion_model = KinematicMotionModel(self.particles, self.state_lock) # An object used for applying kinematic motion model
       self.motion_sub = rospy.Subscriber(rospy.get_param("~motion_topic", "/vesc/sensors/core"), VescStateStamped, self.motion_model.motion_cb, queue_size=1)
@@ -93,7 +98,7 @@ class ParticleFilter():
   def publish_tf(self,pose):
   # Use self.pub_tf
   # YOUR CODE HERE
-    self.pub_tf.sendTransform((pose[0], pose[1], 0),tf.transformations.quaternion_from_euler(0, 0, pose[2]),rospy.Time.now(),"base_link","map")
+    self.pub_tf.sendTransform((pose[0], pose[1], 0),tf.transformations.quaternion_from_euler(0, 0, pose[2]),rospy.Time.now(),"map","base_link")
 
   # Returns the expected pose given the current particles and weights
   def expected_pose(self):
@@ -114,7 +119,8 @@ class ParticleFilter():
     for i in range(self.MAX_PARTICLES):
        self.particles[i][0] = x + np.random.normal(0, 0.1)
        self.particles[i][1] = y + np.random.normal(0, 0.1)
-       self.particles[i][2] = t[2] + np.random.normal(0, 0.1)
+       self.particles[i][2] = t[2] + np.random.normal(0, 1)
+       self.weights[i] = 1.0 / float(self.MAX_PARTICLES)
     
     self.state_lock.release()
     
@@ -128,27 +134,33 @@ class ParticleFilter():
     self.state_lock.acquire()
     
     # YOUR CODE HERE
+    #1
     self.publish_tf(self.expected_pose())
 
-    #something with self.pub_laser.publish()
+    #2
+    lasermsg = self.sensor_model.last_laser
+    lasermsg.header.frame_id = "base_link"
+    self.pub_laser.publish(self.sensor_model.last_laser)
     
+    #3
     exp = PoseStamped()
     exp.header.stamp = rospy.Time.now()
-    exp.header.frame_id = "base_link"
+    exp.header.frame_id = "map"
     e = self.expected_pose()
     q = tf.transformations.quaternion_from_euler(0, 0, e[2])
     exp.pose = Pose(Point(e[0], e[1], 0), Quaternion(*q))
     self.pose_pub.publish(exp)
 
+    #4
     vizparts = PoseArray()
     vizparts.header.stamp = rospy.Time.now()
-    vizparts.header.frame_id = "base_link"
+    vizparts.header.frame_id = "map"
     indices = range(self.particles.shape[0])
     picked_indices = np.random.choice(indices, len(self.particles), True, self.weights);
     for i in picked_indices:
         p = self.particles[i]
-        q = tf.transformations.quaternion_from_euler(0, 0, e[2])
-        ps = Pose(Point(p[0], p[1], 0), Quaternion(q[0], q[1], q[2], q[3]))
+        q = tf.transformations.quaternion_from_euler(0, 0, p[2])
+        ps = Pose(Point(p[0], p[1], 0), Quaternion(*q))
         vizparts.poses.append(ps)
     self.particle_pub.publish(vizparts)
     
@@ -158,7 +170,7 @@ class ParticleFilter():
 if __name__ == '__main__':
   rospy.init_node("particle_filter", anonymous=True) # Initialize the node
   pf = ParticleFilter() # Create the particle filter
-  hm.main()
+  #hm.main()
 
   while not rospy.is_shutdown(): # Keep going until we kill it
     # Callbacks are running in separate threads
