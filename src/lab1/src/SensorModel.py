@@ -62,12 +62,12 @@ class SensorModel:
     obs[1] = self.downsampled_angles
     obs = tuple(obs)
  
-    print(self.weights)
+    ###print(self.weights)
     self.apply_sensor_model(self.particles, obs, self.weights)
-    print(self.weights)
+    ###print(self.weights)
     self.weights /= np.sum(self.weights)
-    print(self.weights)
-    print(" \n")
+    ###print(self.weights)
+    ###print(" \n")
     
     self.last_laser = msg
     self.do_resample = True
@@ -125,10 +125,12 @@ class SensorModel:
 
     self.range_method.calc_range_repeat_angles(self.queries, obs_angles, self.ranges)
 
-    print(weights)
+    ###print(weights)
 
     # Evaluate the sensor model on the GPU
     self.range_method.eval_sensor_model(obs_ranges, self.ranges, weights, num_rays, proposal_dist.shape[0])
+
+    ###print(weights)
 
     np.power(weights, INV_SQUASH_FACTOR, weights)
 

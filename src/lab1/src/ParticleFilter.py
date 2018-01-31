@@ -23,11 +23,11 @@ from MotionModel import OdometryMotionModel, KinematicMotionModel
 class ParticleFilter():
 
   def __init__(self):
-    ###self.MAX_PARTICLES = int(rospy.get_param("~max_particles")) # The maximum number of particles
-    ###self.MAX_VIZ_PARTICLES = int(rospy.get_param("~max_viz_particles")) # The maximum number of particles to visualize
+    self.MAX_PARTICLES = int(rospy.get_param("~max_particles")) # The maximum number of particles
+    self.MAX_VIZ_PARTICLES = int(rospy.get_param("~max_viz_particles")) # The maximum number of particles to visualize
 
-    self.MAX_PARTICLES = 100
-    self.MAX_VIZ_PARTICLES = 100
+    ###self.MAX_PARTICLES /= 2
+    ###self.MAX_VIZ_PARTICLES = 100
 
     self.particle_indices = np.arange(self.MAX_PARTICLES)
     self.particles = np.zeros((self.MAX_PARTICLES,3)) # Numpy matrix of dimension MAX_PARTICLES x 3
@@ -98,12 +98,17 @@ class ParticleFilter():
   def publish_tf(self,pose):
   # Use self.pub_tf
   # YOUR CODE HERE
-    self.pub_tf.sendTransform((pose[0], pose[1], 0),tf.transformations.quaternion_from_euler(0, 0, pose[2]),rospy.Time.now(),"map","base_link")
+    self.pub_tf.sendTransform((pose[0], pose[1], 0),tf.transformations.quaternion_from_euler(0, 0, -1*pose[2]),rospy.Time.now(),"map","laser")
 
   # Returns the expected pose given the current particles and weights
   def expected_pose(self):
   # YOUR CODE HERE
-    return np.mean(self.particles, axis=0)
+    ###return np.mean(self.particles, axis=0)
+    #return np.matmul(self.particles, self.weights)
+    ret = [0,0,0]
+    for i in range(self.MAX_PARTICLES):
+        ret += self.particles[i]*self.weights[i]
+    return ret
     
   # Callback for '/initialpose' topic. RVIZ publishes a message to this topic when you specify an initial pose using its GUI
   # Reinitialize your particles and weights according to the received initial pose
@@ -119,7 +124,7 @@ class ParticleFilter():
     for i in range(self.MAX_PARTICLES):
        self.particles[i][0] = x + np.random.normal(0, 0.1)
        self.particles[i][1] = y + np.random.normal(0, 0.1)
-       self.particles[i][2] = t[2] + np.random.normal(0, 1)
+       self.particles[i][2] = t[2] + np.random.normal(0, 0.1)
        self.weights[i] = 1.0 / float(self.MAX_PARTICLES)
     
     self.state_lock.release()
@@ -134,21 +139,21 @@ class ParticleFilter():
     self.state_lock.acquire()
     
     # YOUR CODE HERE
+    expected_pose = self.expected_pose()
     #1
-    self.publish_tf(self.expected_pose())
+    self.publish_tf(expected_pose)
 
     #2
     lasermsg = self.sensor_model.last_laser
-    lasermsg.header.frame_id = "base_link"
+    lasermsg.header.frame_id = "laser"
     self.pub_laser.publish(self.sensor_model.last_laser)
     
     #3
     exp = PoseStamped()
     exp.header.stamp = rospy.Time.now()
     exp.header.frame_id = "map"
-    e = self.expected_pose()
-    q = tf.transformations.quaternion_from_euler(0, 0, e[2])
-    exp.pose = Pose(Point(e[0], e[1], 0), Quaternion(*q))
+    q = tf.transformations.quaternion_from_euler(0, 0, expected_pose[2])
+    exp.pose = Pose(Point(expected_pose[0], expected_pose[1], 0), Quaternion(*q))
     self.pose_pub.publish(exp)
 
     #4
