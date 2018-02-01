@@ -19,7 +19,7 @@ class ReSampler:
     # YOUR CODE HERE
     indices = range(self.particles.shape[0])
     picked_indices = np.random.choice(indices, len(self.particles), True, self.weights);
-    self.particles = np.take(self.particles, picked_indices)
+    self.particles[:] = np.take(self.particles, picked_indices)
     
     self.state_lock.release()
   
@@ -38,7 +38,7 @@ class ReSampler:
         index = index + 1
         curr_weight = curr_weight + self.weight[index]
         new_particles.append(self.particles[index])  
-    self.particles = new_particles
+    self.particles[:] = new_particles[:]
 
     self.state_lock.release()
 

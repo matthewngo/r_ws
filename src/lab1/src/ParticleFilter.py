@@ -104,12 +104,12 @@ class ParticleFilter():
   # Returns the expected pose given the current particles and weights
   def expected_pose(self):
   # YOUR CODE HERE
-    ###return np.mean(self.particles, axis=0)
+    return np.mean(self.particles, axis=0)
     #return np.matmul(self.particles, self.weights)
-    ret = [0,0,0]
-    for i in range(self.MAX_PARTICLES):
-        ret += self.particles[i]*self.weights[i]
-    return ret
+    #ret = [0,0,0]
+    #for i in range(self.MAX_PARTICLES):
+    #    ret += self.particles[i]*self.weights[i]
+    #return ret
     
   # Callback for '/initialpose' topic. RVIZ publishes a message to this topic when you specify an initial pose using its GUI
   # Reinitialize your particles and weights according to the received initial pose
@@ -158,18 +158,20 @@ class ParticleFilter():
     self.pose_pub.publish(exp)
 
     #4
+    import time
+    a = time.time()
     vizparts = PoseArray()
     vizparts.header.stamp = rospy.Time.now()
     vizparts.header.frame_id = "map"
     indices = range(self.particles.shape[0])
-    picked_indices = np.random.choice(indices, len(self.particles), True, self.weights);
+    picked_indices = np.random.choice(indices, 100, True, self.weights); #instead of len(self.particles)
     for i in picked_indices:
         p = self.particles[i]
         q = tf.transformations.quaternion_from_euler(0, 0, p[2])
         ps = Pose(Point(p[0], p[1], 0), Quaternion(*q))
         vizparts.poses.append(ps)
     self.particle_pub.publish(vizparts)
-    
+    print('Viz: ', time.time() - a)
     self.state_lock.release()
   
 # Suggested main 
