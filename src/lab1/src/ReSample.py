@@ -1,4 +1,5 @@
 import rospy
+from threading import Lock
 import numpy as np
 
 class ReSampler:
@@ -33,12 +34,12 @@ class ReSampler:
     curr_weight = self.weights[0]
     index = 0
     for particle in range(num_particles):
-      u = rand_num + (particle-1)/num_particles
-      while (u < curr_weight):
+      u = rand_num + (particle)/num_particles
+      while (not index < num_particles and u > curr_weight):
         index = index + 1
-        curr_weight = curr_weight + self.weight[index]
-        new_particles.append(self.particles[index])  
-    self.particles[:] = new_particles[:]
+        curr_weight = curr_weight + self.weights[index]
+      new_particles.append(self.particles[index])  
+    self.particles = np.copy(new_particles)
 
     self.state_lock.release()
 

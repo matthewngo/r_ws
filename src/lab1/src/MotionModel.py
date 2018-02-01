@@ -127,16 +127,16 @@ class KinematicMotionModel:
 
     delta_theta = np.multiply(((theta_noise + control[0]) / 0.33), np.sin(2 * beta)) * control[2]
 
-    print delta_x.shape
-    print delta_y.shape
-    print delta_theta.shape
+    #print delta_x.shape
+    #print delta_y.shape
+    #print delta_theta.shape
 
     thing_to_add = np.column_stack([delta_x, delta_y, delta_theta])
-    print thing_to_add.shape
+    #print thing_to_add.shape
 
     proposal_dist[:,:] = np.add(proposal_dist, thing_to_add)
 
-    print('Motion: ', time.time()-a)
+    #print('Motion: ', time.time()-a)
     
 if __name__ == '__main__':
   pass
