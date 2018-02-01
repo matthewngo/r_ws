@@ -118,10 +118,12 @@ class ParticleFilter():
     self.state_lock.acquire()
     
     # YOUR CODE HERE
+ 
     x = msg.pose.pose.position.x
     y = msg.pose.pose.position.y
     q = np.array([msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w])
     t = tf.transformations.euler_from_quaternion(q)
+    print x,y
     for i in range(self.MAX_PARTICLES):
        self.particles[i][0] = x + np.random.normal(0, 0.1)
        self.particles[i][1] = y + np.random.normal(0, 0.1)
@@ -146,7 +148,7 @@ class ParticleFilter():
 
     #2
     lasermsg = self.sensor_model.last_laser
-    lasermsg.header.frame_id = "laser"
+    #lasermsg.header.frame_id = "laser"
     self.pub_laser.publish(self.sensor_model.last_laser)
     
     #3
@@ -171,7 +173,7 @@ class ParticleFilter():
         ps = Pose(Point(p[0], p[1], 0), Quaternion(*q))
         vizparts.poses.append(ps)
     self.particle_pub.publish(vizparts)
-    print('Viz: ', time.time() - a)
+    #print('Viz: ', time.time() - a)
     self.state_lock.release()
   
 # Suggested main 

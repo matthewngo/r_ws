@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
+import math
 import numpy as np
 import utils as Utils
 import tf.transformations
@@ -34,11 +35,14 @@ class OdometryMotionModel:
       # YOUR CODE HERE
       # deterministic, get the control (delta_x, delta_y, delta_theta) from msg - last_pose
       # assuming rotation is around the y-axis and we're in a flat 2D world
-      control = [curr_pose[0] - self.last_pose[0],
-                 curr_pose[1] - self.last_pose[1],
-                 curr_pose[2] - self.last_pose[2]]
+      control_diff = [curr_pose[0] - self.last_pose[0],
+                     curr_pose[1] - self.last_pose[1]]
+      rot_theta = self.last_pose[2]
+      rot_matrix = [[math.cos(-rot_theta), -math.sin(-rot_theta)],[math.sin(-rot_theta), math.cos(-rot_theta)]]
 
-    
+      control = np.matmul(rot_matrix, control_diff)
+      control = np.append(control, curr_pose[2] - self.last_pose[2])
+      #print control
       self.apply_motion_model(self.particles, control)
 
     self.last_pose = curr_pose
@@ -47,10 +51,15 @@ class OdometryMotionModel:
   def apply_motion_model(self, proposal_dist, control):
     # Update the proposal distribution by applying the control to each particle
     # YOUR CODE HERE
-    for row in proposal_dist:
-      row[0] += control[0] + np.random.normal(0, 0.1)
-      row[1] += control[1] + np.random.normal(0, 0.1)
-      row[2] += control[2] + np.random.normal(0, 0.1)
+    noise = 0.1 * np.random.randn(len(proposal_dist), 3)
+    noisy_control = noise + control
+    #print noisy_control
+    sin_tab = np.sin(proposal_dist[:, 2])
+    cos_tab = np.cos(proposal_dist[:, 2])
+
+    proposal_dist[:, 0] = (cos_tab * noisy_control[:, 0]) - (sin_tab * noisy_control[:, 1])
+    proposal_dist[:, 1] = (sin_tab * noisy_control[:, 0]) + (cos_tab * noisy_control[:, 1])
+    proposal_dist[:, 2] = noisy_control[:, 2]
     
 class KinematicMotionModel:
 
@@ -99,15 +108,35 @@ class KinematicMotionModel:
     
   def apply_motion_model(self, proposal_dist, control):
     # Update the proposal distribution by applying the control to each particle
+    import time
+    a = time.time()
     
-    for row in proposal_dist:
-      delta_x = (control[0]+np.random.normal(0, 0.1)) * np.cos(row[2]) * control[2]
-      delta_y = (control[0]+np.random.normal(0, 0.1)) * np.sin(row[2]) * control[2]
-      beta = np.arctan(0.5 * np.tan(control[1]+np.random.normal(0, 0.1)))
-      delta_theta = ((control[0]+np.random.normal(0, 0.1)) / 0.33) * np.sin(2 * beta) * control[2]
-      row[0] += delta_x
-      row[1] += delta_y
-      row[2] += delta_theta
+
+    proposal_cos = np.cos(proposal_dist[:, 2])
+    proposal_sin = np.sin(proposal_dist[:, 2])
+
+    x_noise = 0.1 * np.random.randn(len(proposal_dist))
+    y_noise = 0.1 * np.random.randn(len(proposal_dist))
+    beta_noise = 0.1 * np.random.randn(len(proposal_dist), 1)
+    theta_noise = 0.1 * np.random.randn(len(proposal_dist), 1)
+
+    delta_x = np.multiply((x_noise + control[0]), proposal_cos) * control[2]
+    delta_y = np.multiply((x_noise + control[0]), proposal_sin) * control[2]
+
+    beta = np.arctan(0.5 * np.tan(beta_noise + control[1]))
+
+    delta_theta = np.multiply(((theta_noise + control[0]) / 0.33), np.sin(2 * beta)) * control[2]
+
+    print delta_x.shape
+    print delta_y.shape
+    print delta_theta.shape
+
+    thing_to_add = np.column_stack([delta_x, delta_y, delta_theta])
+    print thing_to_add.shape
+
+    proposal_dist[:,:] = np.add(proposal_dist, thing_to_add)
+
+    print('Motion: ', time.time()-a)
     
 if __name__ == '__main__':
   pass
