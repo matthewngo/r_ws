@@ -1,4 +1,4 @@
-1. 
+1. See 4_6_1_plot.png and 4_6_1_plot_explanation.
 
 2. Situations where either estimation is bad:
 
@@ -8,4 +8,4 @@
 
 A better estimate: Group the particles in localized groups of 5 square meters or so. Take the average position within each group along with the sum of all the weights, and choose the group with the largest weight sum. This solves the problems of multiple clusters discussed in why the mean may be a poor estimate and may help alleviate some of the issues discussed in why the max may be a bad estimate.
 
-3. 
+3. We were not able to finish this question before the deadline.
