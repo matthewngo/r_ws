@@ -1,0 +1,6 @@
+2.5
+
+1. The kinematic motion model seemed to do better. It tracks the rotation more accurately, while the odometry model tracked the position change more accurately.
+
+2. The kinematic motion model doesn't have a notion of acceleration or maintained velocity--they just get squished down to position. If it kept track in change of velocity, it would be able to more easily generate likely particles with a certain acceleration or deceleration.
+The odometry motion model has a LOT of drift accumulation. I don't know a good way to fix that other than adding additional sensors like an IMU.
