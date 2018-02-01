@@ -1,0 +1,5 @@
+2.4.1. See "CSE 490R figures"
+
+2.4.2. The odometry motion model seems to be slightly better overall, and both of them do better on the circle than on the loop. Neither of them do particularly well at handling drift, though.
+
+2.4.3. Both circle and the odometry/loop one look pretty similar--just a random cloud of particles. However, the loop/kinematic one seems to have caught it in the middle of a turn, since the particles have the distinctive arced spray of a kinematic motion model turn. 
