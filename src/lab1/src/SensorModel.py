@@ -9,7 +9,7 @@ from threading import Lock
 import math
 
 THETA_DISCRETIZATION = 112 # Discretization of scanning angle
-INV_SQUASH_FACTOR = 2.2    # Factor for helping the weight distribution to be less peaked
+INV_SQUASH_FACTOR = 0.2    # Factor for helping the weight distribution to be less peaked
 
 Z_SHORT = 0.1  # Weight for short reading
 Z_MAX = 0.1    # Weight for max reading
@@ -28,7 +28,8 @@ class SensorModel:
     self.particles = particles
     self.weights = weights
     
-    self.LASER_RAY_STEP = int(rospy.get_param("~laser_ray_step")) # Step for downsampling laser scans
+    ###self.LASER_RAY_STEP = int(rospy.get_param("~laser_ray_step")) # Step for downsampling laser scans
+    self.LASER_RAY_STEP = 50
     self.MAX_RANGE_METERS = float(rospy.get_param("~max_range_meters")) # The max range of the laser
     
     oMap = range_libc.PyOMap(map_msg) # A version of the map that range_libc can understand

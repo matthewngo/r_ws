@@ -98,7 +98,8 @@ class ParticleFilter():
   def publish_tf(self,pose):
   # Use self.pub_tf
   # YOUR CODE HERE
-    self.pub_tf.sendTransform((pose[0], pose[1], 0),tf.transformations.quaternion_from_euler(0, 0, -1*pose[2]),rospy.Time.now(),"map","laser")
+    self.pub_tf.sendTransform((pose[0], pose[1], 0),tf.transformations.quaternion_from_euler(0, 0, pose[2]),rospy.Time.now(),"laser","map")
+    ###self.pub_tf.sendTransform((pose[0], pose[1], 0),(0,0,0,1),rospy.Time.now(),"laser","map")
 
   # Returns the expected pose given the current particles and weights
   def expected_pose(self):
@@ -124,7 +125,7 @@ class ParticleFilter():
     for i in range(self.MAX_PARTICLES):
        self.particles[i][0] = x + np.random.normal(0, 0.1)
        self.particles[i][1] = y + np.random.normal(0, 0.1)
-       self.particles[i][2] = t[2] + np.random.normal(0, 0.1)
+       self.particles[i][2] = t[2] + np.random.normal(0, 0.3)
        self.weights[i] = 1.0 / float(self.MAX_PARTICLES)
     
     self.state_lock.release()
