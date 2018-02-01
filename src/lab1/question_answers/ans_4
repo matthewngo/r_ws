@@ -1,0 +1,11 @@
+1.
+
+2. Situations where either estimation is bad:
+
+  mean: The particles are clustered in multiple rooms with similar geography. The mean of all these particles would correspond to the midpoint of all these rooms, which would not give a good estimate for the position of the car since it would be in a location where there are no local particles.
+
+  max: The particles are spread in a large circular cloud with equal weights, with the actual location being in the middle of this cloud. Taking the maximum weighted particle would give a random value in this cloud, which has no guarantee of being close to the actual location of the car.
+
+A better estimate: Group the particles in localized groups of 5 square meters or so. Take the average position within each group along with the sum of all the weights, and choose the group with the largest weight sum. This solves the problems of multiple clusters discussed in why the mean may be a poor estimate and may help alleviate some of the issues discussed in why the max may be a bad estimate.
+
+3. 
