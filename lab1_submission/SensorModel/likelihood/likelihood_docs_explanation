@@ -1,0 +1,3 @@
+The heatmaps show the likelihood map for each bag file. The associated csv files have a 3200 by 3200 grid (each cell representing the pixel at that xy position in the image) representing the angle (in radians) that gives the maximum weight associated with that pixel.
+
+ParticleResolutionVsProcessingTime gives the processing time for generating the heatmap for differing discretization spacing between particles (i.e. spacing of 1 means the particles are right next to each other. spacing of 5 means that each particle is 5 pixels apart in both x and y). Every 10 degrees is used as the angle discretization and each run uses LaserScan1.bag.
