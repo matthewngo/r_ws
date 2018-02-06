@@ -1,0 +1,8 @@
+
+<launch>
+
+	<node pkg="lab2" type="LineFollower.py" name="Line_follower" output="screen">
+
+	</node>
+
+</launch>
