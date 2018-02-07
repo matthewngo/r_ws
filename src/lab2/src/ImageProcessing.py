@@ -24,3 +24,5 @@ class ImageProcessor:
 
 	def get_error(self):
 		#return the current error for the processed image
+
+#publish processed image??

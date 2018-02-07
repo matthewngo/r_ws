@@ -4,6 +4,8 @@ import rospy
 import numpy as np
 from threading import Lock
 
+from sensor_msgs.msg import Image
+
 from ImageProcessing import ImageProcessor
 
 
@@ -20,7 +22,7 @@ class LineFollower:
 
 		#hook your image processor up to the topic
 		self.image_processor = ImageProcessor(self.state_lock)
-		self.image_sub = rospy.Subscriber(rospy.get_param("~image_topic", "TODO: image topic name"), TODOIMAGETYPE, self.image_processor.image_cb, queue_size=1)
+		self.image_sub = rospy.Subscriber(rospy.get_param("~image_topic", "/camera/color/image_raw"), Image, self.image_processor.image_cb, queue_size=1)
 
 	def angle(self):
 		#return the angle you go to
