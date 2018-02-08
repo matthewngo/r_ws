@@ -1,8 +1,9 @@
 
 <launch>
 
+	<arg name="image_topic" default="/camera/color/image_raw"/>
 	<node pkg="lab2" type="LineFollower.py" name="Line_follower" output="screen">
-
+		<param name="image_topic" value="$(arg image_topic)"/>
 	</node>
 
 </launch>

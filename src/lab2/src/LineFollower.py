@@ -26,10 +26,12 @@ class LineFollower:
 
 	def angle(self):
 		#return the angle you go to
-	
+		pass
+
 if __name__ == '__main__':
 	rospy.init_node("line_follower", anonymous=True)
 	lf = LineFollower()
 
 	while not rospy.is_shutdown():
 		#drive forward with constant speed and lf.angle
+		i = 3
