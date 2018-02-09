@@ -2,8 +2,10 @@
 <launch>
 
 	<arg name="image_topic" default="/camera/color/image_raw"/>
+	<arg name="drive_topic" default="/vesc/high_level/ackermann_cmd_mux/input/nav_0"/>
 	<node pkg="lab2" type="LineFollower.py" name="Line_follower" output="screen">
 		<param name="image_topic" value="$(arg image_topic)"/>
+		<param name="drive_topic" value="$(arg drive_topic)"/>
 	</node>
 
 </launch>
