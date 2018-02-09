@@ -33,13 +33,21 @@ class ImageProcessor:
 
 		self.pub_masked = rospy.Publisher("/lf/viz/masked", Image, queue_size = 1)
 
+		self.use_blue = True
+
 	def image_cb(self, msg):
 		self.state_lock.acquire()
 
+		#the first time, just take in the message and return
 		if(self.prev_msg == None):
 			self.prev_msg = msg
 			self.state_lock.release()
 			return
+
+		#if you get two messages in the same second, ignore the second one
+		"""if(self.prev_msg.header.stamp.secs == msg.header.stamp.secs):
+			self.state_lock.release()
+			return"""
 
 		#image processing:
 		#convert message to cv2
@@ -58,11 +66,12 @@ class ImageProcessor:
 		im_hsv = cv2.cvtColor(im, cv2.COLOR_RGB2HSV)
 		
 		#threshold red/blue hues; everything else is black
-		red_1 = cv2.inRange(im_hsv, np.array([0,100,100]), np.array([10,255,255]))
-		red_2 = cv2.inRange(im_hsv, np.array([169,100,100]), np.array([179,255,255]))
-		blue = cv2.inRange(im_hsv, np.array([90,100,100]), np.array([120,255,255]))
-
-		mask = cv2.bitwise_or(cv2.bitwise_or(red_1, red_2), blue)
+		if(self.use_blue):
+			mask = cv2.inRange(im_hsv, np.array([90,100,100]), np.array([120,255,255]))
+		else:
+			red_1 = cv2.inRange(im_hsv, np.array([0,100,100]), np.array([10,255,255]))
+			red_2 = cv2.inRange(im_hsv, np.array([169,100,100]), np.array([179,255,255]))
+			mask = mask = cv2.bitwise_or(red_1, red_2)
 
 		#newmsg = msg
 		#newmsg = self.bridge.cv2_to_imgmsg(mask)
@@ -87,15 +96,16 @@ class ImageProcessor:
 		self.prev_error = self.curr_error
 		self.curr_error = center*2 / msg.width - 1
 		del_t = np.float64(msg.header.stamp.secs - self.prev_msg.header.stamp.secs)
+		del_t += np.float64((msg.header.stamp.nsecs - self.prev_msg.header.stamp.nsecs)/1000000000.0)
 		self.total_error += self.curr_error * del_t
 		self.delta_error = (self.curr_error - self.prev_error) / del_t
 
-		print self.prev_error
+		"""print self.prev_error
 		print self.curr_error
 		print self.total_error
 		print self.delta_error
 		print del_t
-		print "****"
+		print "****" """
 
 		self.prev_msg = msg
 
