@@ -72,13 +72,18 @@ class ImageProcessor:
 		i = 0
 		s = 0
                 col_num = 0
+		#crop_img[crop_img != 255] = 0
+                res = np.nonzero(crop_img)
+                center = float(sum(res[1]))/(len(res[1]) + 0.0001)
+
+		"""
 		for col in np.transpose(crop_img):
 			amt = list(col.flatten()).count(255)
 			i+=amt
 			s+=col_num*amt
                         col_num += 1
 		center = s / (i+0.0001)
-				
+		"""		
 		#update error values
 		self.prev_error = self.curr_error
 		self.curr_error = center*2 / msg.width - 1
