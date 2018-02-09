@@ -17,10 +17,10 @@ class LineFollower:
 		self.state_lock = Lock()
 
 		#DEFFO tweak these later
-		self.k_p = 3
-		self.k_i = 3
-		self.k_d = 3
-		self.speed = 0.25
+		self.k_p = -2
+		self.k_i = 0
+		self.k_d = -1
+		self.speed = 0.2
 
 		#hook your image processor up to the topic
 		self.image_processor = ImageProcessor(self.state_lock)
@@ -29,9 +29,9 @@ class LineFollower:
 		self.pub_drive = rospy.Publisher(rospy.get_param("~drive_topic", "/vesc/high_level/ackermann_cmd_mux/input/nav_0"), AckermannDriveStamped, queue_size = 1)
 
 	def angle(self):
-		#self.state_lock.acquire()
+		self.state_lock.acquire()
 		ret = self.k_p*self.image_processor.curr_error + self.k_i*self.image_processor.total_error + self.k_d*self.image_processor.delta_error
-		#self.state_lock.release()
+		self.state_lock.release()
 		return ret
 
 if __name__ == '__main__':
@@ -45,5 +45,5 @@ if __name__ == '__main__':
 		msg.header.frame_id = "base_link"
 		msg.drive.steering_angle = lf.angle()
 		msg.drive.speed = lf.speed
-		print lf.angle()
+		#print lf.angle()
 		lf.pub_drive.publish(msg)

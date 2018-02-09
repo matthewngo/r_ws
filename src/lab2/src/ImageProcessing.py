@@ -71,12 +71,12 @@ class ImageProcessor:
 		#calculate center of the region of interest (error)
 		i = 0
 		s = 0
-                col_num = 0
+		col_num = 0
 		for col in np.transpose(crop_img):
 			amt = list(col.flatten()).count(255)
 			i+=amt
 			s+=col_num*amt
-                        col_num += 1
+			col_num += 1
 		center = s / (i+0.0001)
 				
 		#update error values
@@ -95,6 +95,8 @@ class ImageProcessor:
 		print "****" """
 
 		self.prev_msg = msg
+
+		#print("Error: "+str(self.curr_error))
 
 		self.state_lock.release()
 
