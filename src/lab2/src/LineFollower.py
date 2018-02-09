@@ -29,9 +29,9 @@ class LineFollower:
 		self.pub_drive = rospy.Publisher(rospy.get_param("~drive_topic", "/vesc/high_level/ackermann_cmd_mux/input/nav_0"), AckermannDriveStamped, queue_size = 1)
 
 	def angle(self):
-		self.state_lock.acquire()
+		#self.state_lock.acquire()
 		ret = self.k_p*self.image_processor.curr_error + self.k_i*self.image_processor.total_error + self.k_d*self.image_processor.delta_error
-		self.state_lock.release()
+		#self.state_lock.release()
 		return ret
 
 if __name__ == '__main__':

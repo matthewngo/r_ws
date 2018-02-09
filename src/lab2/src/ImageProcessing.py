@@ -44,22 +44,8 @@ class ImageProcessor:
 			self.state_lock.release()
 			return
 
-		#if you get two messages in the same second, ignore the second one
-		"""if(self.prev_msg.header.stamp.secs == msg.header.stamp.secs):
-			self.state_lock.release()
-			return"""
-
 		#image processing:
 		#convert message to cv2
-		"""print "------"
-		print msg.header
-		print msg.height
-		print msg.width
-		print msg.encoding
-		print msg.is_bigendian
-		print msg.step
-		print len(msg.data)"""
-
 		im = self.bridge.imgmsg_to_cv2(msg)
 
 		#convert rgb to hsv
@@ -71,7 +57,7 @@ class ImageProcessor:
 		else:
 			red_1 = cv2.inRange(im_hsv, np.array([0,100,100]), np.array([10,255,255]))
 			red_2 = cv2.inRange(im_hsv, np.array([169,100,100]), np.array([179,255,255]))
-			mask = mask = cv2.bitwise_or(red_1, red_2)
+			mask = cv2.bitwise_or(red_1, red_2)
 
 		#newmsg = msg
 		#newmsg = self.bridge.cv2_to_imgmsg(mask)
