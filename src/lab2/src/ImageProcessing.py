@@ -64,7 +64,7 @@ class ImageProcessor:
 		#self.pub_masked.publish(newmsg)
 
 		#crop to just the bottom chunk of the screen
-		crop_img = mask[350:450, :]
+		crop_img = mask[275:450, :]
 		newmsg = self.bridge.cv2_to_imgmsg(crop_img)
 		self.pub_masked.publish(newmsg)
 
@@ -101,7 +101,7 @@ class ImageProcessor:
 
 		self.prev_msg = msg
 
-		#print("Error: "+str(self.curr_error))
+		print("Error: %.2f %.2f %.5f" % (self.curr_error, self.total_error, self.delta_error))
 
 		self.state_lock.release()
 

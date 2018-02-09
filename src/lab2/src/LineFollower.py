@@ -17,10 +17,10 @@ class LineFollower:
 		self.state_lock = Lock()
 
 		#DEFFO tweak these later
-		self.k_p = -2
+		self.k_p = 1.25
 		self.k_i = 0
-		self.k_d = -1
-		self.speed = 0.2
+		self.k_d = 0.4
+		self.speed = 1
 
 		#hook your image processor up to the topic
 		self.image_processor = ImageProcessor(self.state_lock)
@@ -30,9 +30,12 @@ class LineFollower:
 
 	def angle(self):
 		self.state_lock.acquire()
-		ret = self.k_p*self.image_processor.curr_error + self.k_i*self.image_processor.total_error + self.k_d*self.image_processor.delta_error
+		if self.image_processor.curr_error <= -0.999:
+			ret = 0
+		else :
+			ret = self.k_p*self.image_processor.curr_error + self.k_i*self.image_processor.total_error + self.k_d*self.image_processor.delta_error
 		self.state_lock.release()
-		return ret
+		return -1 * ret
 
 if __name__ == '__main__':
 	rospy.init_node("line_follower", anonymous=True)
