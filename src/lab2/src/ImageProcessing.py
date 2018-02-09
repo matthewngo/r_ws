@@ -71,11 +71,12 @@ class ImageProcessor:
 		#calculate center of the region of interest (error)
 		i = 0
 		s = 0
-		for row in crop_img:
-			for col in range(len(row)):
-				if row[col] == 255:
-					i+=1
-					s+=col
+                col_num = 0
+		for col in np.transpose(crop_img):
+			amt = list(col.flatten()).count(255)
+			i+=amt
+			s+=col_num*amt
+                        col_num += 1
 		center = s / (i+0.0001)
 				
 		#update error values
