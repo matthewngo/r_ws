@@ -18,7 +18,7 @@ for index in range(21):
         pos = initial_pos
         x = []
         y = []
-	for i in range(100):
+	for i in range(150):
 		theta = pos[2]
 		delta_x = (speed * np.cos(theta)) 
 		delta_y = (speed * np.sin(theta))
