@@ -46,7 +46,13 @@ if __name__ == '__main__':
 		msg = AckermannDriveStamped()
 		msg.header.stamp = rospy.Time.now()
 		msg.header.frame_id = "base_link"
-		msg.drive.steering_angle = lf.angle()
-		msg.drive.speed = lf.speed
+
+		if lf.image_processor.visible == False:
+			msg.drive.steering_angle = 0
+			msg.drive.speed = -1 * lf.speed
+		else:
+			msg.drive.steering_angle = lf.angle()
+			msg.drive.speed = lf.speed
+			
 		#print lf.angle()
 		lf.pub_drive.publish(msg)
