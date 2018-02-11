@@ -35,6 +35,8 @@ class ImageProcessor:
 
 		self.use_blue = True
 
+		self.visible = False
+
 	def image_cb(self, msg):
 		self.state_lock.acquire()
 
@@ -69,12 +71,16 @@ class ImageProcessor:
 		self.pub_masked.publish(newmsg)
 
 		#calculate center of the region of interest (error)
-		i = 0
-		s = 0
-		col_num = 0
+		#i = 0
+		#s = 0
+		#col_num = 0
 		#crop_img[crop_img != 255] = 0
 		res = np.nonzero(crop_img)
 		center = float(sum(res[1]))/(len(res[1]) + 0.0001)
+		if len(res[1]) == 0:
+			self.visible = False
+		else:
+			self.visible = True
 
 		"""
 		for col in np.transpose(crop_img):
@@ -87,6 +93,8 @@ class ImageProcessor:
 		#update error values
 		self.prev_error = self.curr_error
 		self.curr_error = center*2 / msg.width - 1
+		if self.visible == False:
+			self.curr_error = 0
 		del_t = np.float64(msg.header.stamp.secs - self.prev_msg.header.stamp.secs)
 		del_t += np.float64((msg.header.stamp.nsecs - self.prev_msg.header.stamp.nsecs)/1000000000.0)
 		self.total_error += self.curr_error * del_t
@@ -101,7 +109,7 @@ class ImageProcessor:
 
 		self.prev_msg = msg
 
-		print("Error: %.2f %.2f %.5f" % (self.curr_error, self.total_error, self.delta_error))
+		#print("Error: %.2f %.2f %.5f" % (self.curr_error, self.total_error, self.delta_error))
 
 		self.state_lock.release()
 
