@@ -2,7 +2,7 @@
 See images.
 
 3.2.2
-See rollout_fudged.
+See rollout_fudged. We used 21 constant controls in our kinematic model, evenly spaced between the minimum and maximum angles allowed, with a constant speed.
 
 3.2.3
 It runs at 30hz. 
