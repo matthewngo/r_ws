@@ -7,7 +7,7 @@ from threading import Lock
 from sensor_msgs.msg import Image
 from ackermann_msgs.msg import AckermannDriveStamped
 
-from ImageProcessing import ImageProcessor
+from ImageProcessing import ImageProcessor, TemplateMatcher
 
 
 class LineFollower:
@@ -51,7 +51,7 @@ if __name__ == '__main__':
 		msg.header.stamp = rospy.Time.now()
 		msg.header.frame_id = "base_link"
 
-		if self.lineFollow:
+		if lf.lineFollow:
 			if lf.image_processor.visible == False:
 				msg.drive.steering_angle = 0
 				msg.drive.speed = -1 * lf.speed
@@ -59,13 +59,14 @@ if __name__ == '__main__':
 				msg.drive.steering_angle = lf.angle()
 				msg.drive.speed = lf.speed
 		else:
+			ang = lf.template_matcher.choose_template()
 			if lf.template_matcher.visible == False:
 				msg.drive.steering_angle = 0
-				msg.drive.speed = -1 * lf.speed
+				msg.drive.speed =  lf.speed #-1*lf.speed
 			else:
-				msg.drive.steering_angle = lf.template_matcher.choose_template()
+				msg.drive.steering_angle = ang
 				msg.drive.speed = lf.speed
-			rospy.sleep(10)
+			#rospy.sleep(0.5)
 			
 		#print lf.angle()
 		lf.pub_drive.publish(msg)

@@ -141,22 +141,23 @@ class TemplateMatcher:
 			self.state_lock = state_lock
 
 		self.bridge = CvBridge()
-		self.use_blue = True
+		self.use_blue = False
 		self.visible = False
 
 		self.img = None
 
 		self.templates = {}
-		for f in listdir("../../../rollout_fudged"):
+		for f in listdir("/home/nvidia/catkin_ws/rollout_fudged"):
 			angle = float(f[:-4])
 			#load cv2 image
-			im = cv2.imread("../../../rollout_fudged/"+f, 0)
+			im = cv2.imread("/home/nvidia/catkin_ws/rollout_fudged/"+f, 0)
 
 			#crop it
 			im = im[65:535, 105:720]
 
 			#resize it
-			im = cv2.resize(im, (620,175))
+			im = cv2.resize(im, (640,175))
+			im = im[50:,:]
 
 			#make it into a mask
 			im = cv2.cvtColor(im, cv2.COLOR_GRAY2RGB)
@@ -176,7 +177,7 @@ class TemplateMatcher:
 
 		self.state_lock.acquire()
 		#process image
-		im = self.bridge.imgmsg_to_cv2(msg)
+		im = self.bridge.imgmsg_to_cv2(self.img)
 		im_hsv = cv2.cvtColor(im, cv2.COLOR_RGB2HSV)
 		if(self.use_blue):
 			mask = cv2.inRange(im_hsv, np.array([90,100,100]), np.array([120,255,255]))
@@ -184,9 +185,9 @@ class TemplateMatcher:
 			red_1 = cv2.inRange(im_hsv, np.array([0,100,100]), np.array([10,255,255]))
 			red_2 = cv2.inRange(im_hsv, np.array([169,100,100]), np.array([179,255,255]))
 			mask = cv2.bitwise_or(red_1, red_2)
-		crop_img = mask[275:450, :]
+		crop_img = mask[275:450, :] #275:450
 
-		if len(np.nonzero(crop_img)) == 0:
+		if len(np.nonzero(crop_img)[1]) == 0:
 			self.visible = False
 			self.state_lock.release()
 			return 0
@@ -196,15 +197,17 @@ class TemplateMatcher:
 		#compare with templates
 		bestangle = 0
 		bestcomp = 0
-		for a, template in self.templates:
+		for a in self.templates:
+			template = self.templates[a]
 			comp = cv2.bitwise_and(crop_img, template)
-			overlap = len(np.nonzero(comp))
+			overlap = len(np.nonzero(comp)[1])
 			if overlap > bestcomp:
 				bestangle = a
 				bestcomp = overlap
 
 		#pick control
 		angle = bestangle
+		print "Angle: " + str(angle*57.295779513) + " " + str(bestcomp)
 		
 		self.state_lock.release()
 		return angle
