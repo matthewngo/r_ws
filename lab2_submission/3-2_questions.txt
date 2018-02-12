@@ -1,0 +1,11 @@
+3.2.1
+See images.
+
+3.2.2
+See rollout_fudged.
+
+3.2.3
+It runs at 30hz. 
+
+3.2.4
+Each template executes a single control for the entire template. We just set a constant speed and iterated through applicable angles.
