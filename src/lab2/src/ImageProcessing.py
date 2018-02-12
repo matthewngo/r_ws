@@ -10,6 +10,8 @@ import cv2
 import cv_bridge
 from cv_bridge import CvBridge, CvBridgeError
 
+from os import listdir
+
 import tf.transformations
 import tf
 
@@ -191,3 +193,27 @@ class ImageProcessor:
 			M[k, k] = cj*ci
 		return M
 """
+
+
+class TemplateFollower:
+
+	def __init__(self, state_lock=None):
+		#initialize stuff
+		if state_lock is None:
+			self.state_lock = Lock()
+		else:
+			self.state_lock = state_lock
+
+		self.bridge = CvBridge()
+		self.use_blue = True
+		self.visible = False
+
+		self.img = None
+
+		self.templates = []
+
+
+	def image_cb(self, msg):
+		self.state_lock.acquire()
+		self.img = msg
+		self.state_lock.release()

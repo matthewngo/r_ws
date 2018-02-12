@@ -1,0 +1,9 @@
+precompute cv2 image for each template (in init):
+make a cv2 image from projected rollout png (also precomputed)
+make a mask from that (cv2.inRange)
+crop rollout mask
+
+each time you recompute your control:
+bitwise_and each rollout mask with the cropped masked camera image -> template_compare
+select template with max len(np.nonzero(template_compare))
+execute control associated with template
