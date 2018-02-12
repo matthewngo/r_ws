@@ -129,73 +129,9 @@ class ImageProcessor:
 		self.pub_masked.publish(newmsg)
 		self.state_lock.release()
 
-	"""def extrinsics(self, msg):
-		euler = tf.transformations.euler_from_quaternion(np.array([-0.5, 0.5, -0.5, 0.5]))
-		euler = (euler[0] - 0.383972, euler[1], euler[2])
-		rotation_mat = euler_matrix(euler[0], euler[1], euler[2])
-		rotation_mat[:,3] = [0.254, -0.026, 0.198, 1]
-		print rotation_mat
-		return rotation_mat"""
-
-	def intrinsics(self, msg):
-		K = [618.0400390625, 0.0, 321.1227722167969, 0.0, 618.6351318359375, 235.7403106689453, 0.0, 0.0, 1.0]
-		K = np.array(K)
-		K = np.reshape(K, (3, 3))
-
-	def impose_templates(self, msg):
-		#
-		templates = None
-		img = None
-		# convolve?
-
-"""
-	def euler_matrix(ai, aj, ak, axes='sxyz'):
-		try:
-			firstaxis, parity, repetition, frame = _AXES2TUPLE[axes]
-		except (AttributeError, KeyError):
-			_TUPLE2AXES[axes]  # validation
-			firstaxis, parity, repetition, frame = axes
-
-		i = firstaxis
-		j = _NEXT_AXIS[i+parity]
-		k = _NEXT_AXIS[i-parity+1]
-
-		if frame:
-			ai, ak = ak, ai
-		if parity:
-			ai, aj, ak = -ai, -aj, -ak
-
-		si, sj, sk = math.sin(ai), math.sin(aj), math.sin(ak)
-		ci, cj, ck = math.cos(ai), math.cos(aj), math.cos(ak)
-		cc, cs = ci*ck, ci*sk
-		sc, ss = si*ck, si*sk
-
-		M = numpy.identity(4)
-		if repetition:
-			M[i, i] = cj
-			M[i, j] = sj*si
-			M[i, k] = sj*ci
-			M[j, i] = sj*sk
-			M[j, j] = -cj*ss+cc
-			M[j, k] = -cj*cs-sc
-			M[k, i] = -sj*ck
-			M[k, j] = cj*sc+cs
-			M[k, k] = cj*cc-ss
-		else:
-			M[i, i] = cj*ck
-			M[i, j] = sj*sc-cs
-			M[i, k] = sj*cc+ss
-			M[j, i] = cj*sk
-			M[j, j] = sj*ss+cc
-			M[j, k] = sj*cs-sc
-			M[k, i] = -sj
-			M[k, j] = cj*si
-			M[k, k] = cj*ci
-		return M
-"""
 
 
-class TemplateFollower:
+class TemplateMatcher:
 
 	def __init__(self, state_lock=None):
 		#initialize stuff
@@ -211,9 +147,21 @@ class TemplateFollower:
 		self.img = None
 
 		self.templates = []
+		for f in os.listdir("FIND FILEPATH"):
+			print f
+			#load cv2 image
+			#crop it
+			#resize it
+			#make it into a mask
 
 
 	def image_cb(self, msg):
 		self.state_lock.acquire()
 		self.img = msg
 		self.state_lock.release()
+
+	def choose_template(self):
+		self.state_lock.acquire()
+		angle = 0
+		self.state_lock.release()
+		return angle
