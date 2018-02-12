@@ -1,0 +1,8 @@
+prefix=/home/mvn3/r_ws/install
+
+Name: lab2
+Description: Description of lab2
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/mvn3/r_ws/install/lib 
+Requires: 

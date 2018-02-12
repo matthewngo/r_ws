@@ -54,9 +54,12 @@ class ImageProcessor:
 		im = self.bridge.imgmsg_to_cv2(msg)
 
 		# code to extract pictures
-		if self.counter % IMAGE_STEP == 0:
-			cv2.imwrite("./checker_img_" + str(self.counter), im)
-		counter = counter + 1
+		if self.counter % 3 == 0:
+			print "yo", self.counter
+			cv2.imwrite("/home/mvn3/checkboard_boys/checker_img_" + str(self.counter + 200) + ".png", im)
+			print "done saving", self.counter
+		print self.counter
+		self.counter = self.counter + 1
 
 		#convert rgb to hsv
 		im_hsv = cv2.cvtColor(im, cv2.COLOR_RGB2HSV)
@@ -76,8 +79,7 @@ class ImageProcessor:
 		#crop to just the bottom chunk of the screen
 		crop_img = mask[275:450, :]
 
-                #use template matching to obtain new path
-                
+		#use template matching to obtain new path
 
 		#calculate center of the region of interest (error)
 		#i = 0
@@ -127,9 +129,10 @@ class ImageProcessor:
 		mask[450:480,:,2] = 0
 		newmsg = self.bridge.cv2_to_imgmsg(mask)
 		self.pub_masked.publish(newmsg)
+		self.state_lock.release()
 
 	def extrinsics(self, msg):
-                rotation_matrix = None
+		rotation_matrix = None
 		translation_vector = [0.254, -0.026, 0.198]
 
 	def intrinsics(self, msg):
@@ -138,10 +141,27 @@ class ImageProcessor:
 		K = np.reshape(K, (3, 3))
 
 	def impose_templates(self, msg):
-                #
+		#
 		templates = None
 		img = None
-                # convolve?
-		
+		# convolve?
 
-		self.state_lock.release()
+
+	def rotation_matrix(angle, direction, point=None):
+		sina = math.sin(angle)
+		cosa = math.cos(angle)
+		direction = unit_vector(direction[:3])
+		# rotation matrix around unit vector
+		R = numpy.diag([cosa, cosa, cosa])
+		R += numpy.outer(direction, direction) * (1.0 - cosa)
+		direction *= sina
+		R += numpy.array([[ 0.0,-direction[2], direction[1]],
+				[ direction[2], 0.0, -direction[0]],
+				[-direction[1], direction[0], 0.0]])
+		M = numpy.identity(4)
+		M[:3, :3] = R
+		if point is not None:
+			# rotation not around origin
+			point = numpy.array(point[:3], dtype=numpy.float64, copy=False)
+			M[:3, 3] = point - numpy.dot(R, point)
+		return M

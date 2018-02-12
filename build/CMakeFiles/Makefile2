@@ -1037,6 +1037,24 @@ lab1/preinstall:
 .PHONY : lab1/preinstall
 
 #=============================================================================
+# Directory level rules for directory lab2
+
+# Convenience name for "all" pass in the directory.
+lab2/all:
+
+.PHONY : lab2/all
+
+# Convenience name for "clean" pass in the directory.
+lab2/clean:
+
+.PHONY : lab2/clean
+
+# Convenience name for "preinstall" pass in the directory.
+lab2/preinstall:
+
+.PHONY : lab2/preinstall
+
+#=============================================================================
 # Directory level rules for directory racecar_base/ackermann_cmd_mux
 
 # Convenience name for "all" pass in the directory.

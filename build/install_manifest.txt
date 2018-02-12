@@ -63,6 +63,10 @@
 /home/mvn3/r_ws/install/share/lab1/cmake/lab1Config.cmake
 /home/mvn3/r_ws/install/share/lab1/cmake/lab1Config-version.cmake
 /home/mvn3/r_ws/install/share/lab1/package.xml
+/home/mvn3/r_ws/install/lib/pkgconfig/lab2.pc
+/home/mvn3/r_ws/install/share/lab2/cmake/lab2Config.cmake
+/home/mvn3/r_ws/install/share/lab2/cmake/lab2Config-version.cmake
+/home/mvn3/r_ws/install/share/lab2/package.xml
 /home/mvn3/r_ws/install/include/ackermann_cmd_mux/reloadConfig.h
 /home/mvn3/r_ws/install/lib/python2.7/dist-packages/ackermann_cmd_mux/__init__.py
 /home/mvn3/r_ws/install/lib/python2.7/dist-packages/ackermann_cmd_mux/cfg/__init__.pyc

@@ -334,6 +334,12 @@ lab1_BINARY_DIR:STATIC=/home/mvn3/r_ws/build/lab1
 //Value Computed by CMake
 lab1_SOURCE_DIR:STATIC=/home/mvn3/r_ws/src/lab1
 
+//Value Computed by CMake
+lab2_BINARY_DIR:STATIC=/home/mvn3/r_ws/build/lab2
+
+//Value Computed by CMake
+lab2_SOURCE_DIR:STATIC=/home/mvn3/r_ws/src/lab2
+
 //Path to a library.
 lib:FILEPATH=/opt/ros/kinetic/lib/libdynamic_reconfigure_config_init_mutex.so
 
@@ -505,7 +511,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_NM
 CMAKE_NM-ADVANCED:INTERNAL=1
 //number of local generators
-CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=8
+CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=9
 //ADVANCED property for variable: CMAKE_OBJCOPY
 CMAKE_OBJCOPY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_OBJDUMP

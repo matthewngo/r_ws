@@ -122,6 +122,7 @@ if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   include("/home/mvn3/r_ws/build/racecar_base/vesc_msgs/cmake_install.cmake")
   include("/home/mvn3/r_ws/build/lab0/cmake_install.cmake")
   include("/home/mvn3/r_ws/build/lab1/cmake_install.cmake")
+  include("/home/mvn3/r_ws/build/lab2/cmake_install.cmake")
   include("/home/mvn3/r_ws/build/racecar_base/ackermann_cmd_mux/cmake_install.cmake")
 
 endif()
