@@ -16,7 +16,7 @@ from os import listdir
 import tf.transformations
 import tf
 
-class ImageProcessor:
+class ImageProcessorExtra:
 
 	def __init__(self, state_lock=None):
 		#initialize stuff
@@ -54,33 +54,29 @@ class ImageProcessor:
 		#image processing:
 		#convert message to cv2
 		im = self.bridge.imgmsg_to_cv2(msg)
-		print "yo"
 
-		if len(im.shape) != 2:
-			#convert rgb to hsv
-			im_hsv = cv2.cvtColor(im, cv2.COLOR_RGB2HSV)
-		
-			#threshold red/blue hues; everything else is black
-			if(self.use_blue):
-				mask = cv2.inRange(im_hsv, np.array([90,100,100]), np.array([120,255,255]))
-			else:
-				red_1 = cv2.inRange(im_hsv, np.array([0,100,100]), np.array([10,255,255]))
-				red_2 = cv2.inRange(im_hsv, np.array([169,100,100]), np.array([179,255,255]))
-				mask = cv2.bitwise_or(red_1, red_2)
+		print "grayscale detected"
+		# apply gaussian blur and then canny
+		im = cv2.GaussianBlur(im, (3,3), 0)
+		mask = cv2.Canny(im,120,200)
+		# x_len, y_len = mask.shape
+		# y_dim = ((y_len * 2.0 / 3) - 90) - ((y_len * 0.5) - 110)
+		# x_dim = ((x_len * 2.0 / 3) + 80) - ((x_len / 3.0) + 80)
+		# canvas = np.zeros([y_dim, x_dim], np.uint8)
+		canvas = np.zeros([mask.shape[0], mask.shape[1]], np.uint8)
+		lines = cv2.HoughLinesP(mask, rho=1, theta=np.pi/180, threshold=20, minLineLength=70, maxLineGap=5)
+		for x in range(0, len(lines)):
+			for x1,y1,x2,y2 in lines[x]:
+				cv2.line(canvas,(x1,y1),(x2,y2),255,2)
 
-		else:
-			print "grayscale detected"
-			# apply gaussian blur and then canny
-			im = cv2.GaussianBlur(im, (3,3), 0)
-			mask = cv2.Canny(im,150,200)
 		#newmsg = msg
 		#newmsg = self.bridge.cv2_to_imgmsg(mask)
 		#self.pub_masked.publish(newmsg)
 
 		#crop to just the bottom chunk of the screen
-		crop_img = mask[275:450, :]
-		cv2.imwrite('/home/mvn3/grayscale.png', crop_img)
-		return
+		x_len, y_len = mask.shape
+		crop_img = canvas[(y_len * 0.5) - 110:(y_len * 2.0 / 3) - 90, (x_len / 3.0) + 80:(x_len * 2.0 / 3) + 80]
+		# cv2.imwrite('/home/mvn3/grayscale.png', crop_img)
 
 		#use template matching to obtain new path
 
@@ -127,6 +123,7 @@ class ImageProcessor:
 		#print("Error: %.2f %.2f %.5f" % (self.curr_error, self.total_error, self.delta_error))
 
 		#publish cropped image
+		mask = crop_img
 		mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
 		mask[0:275,:,2] = 0
 		mask[450:480,:,2] = 0

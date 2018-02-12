@@ -8,7 +8,9 @@ from sensor_msgs.msg import Image
 from ackermann_msgs.msg import AckermannDriveStamped
 
 from ImageProcessing import ImageProcessor
+from ImageProcessingExtra import ImageProcessorExtra
 
+EXTRA_CRED_GRAYSCALE = True 
 
 class LineFollower:
 
@@ -23,8 +25,14 @@ class LineFollower:
 		self.speed = 1
 
 		#hook your image processor up to the topic
-		self.image_processor = ImageProcessor(self.state_lock)
-		self.image_sub = rospy.Subscriber(rospy.get_param("~image_topic", "/camera/color/image_raw"), Image, self.image_processor.image_cb, queue_size=1)
+		if EXTRA_CRED_GRAYSCALE:
+			self.image_processor = ImageProcessorExtra(self.state_lock)
+			print "get grayed"
+			self.image_sub = rospy.Subscriber("/camera/fisheye/image_raw", Image, self.image_processor.image_cb, queue_size=1)
+                        print "grayed af"
+		else:
+			self.image_processor = ImageProcessor(self.state_lock)
+			self.image_sub = rospy.Subscriber(rospy.get_param("~image_topic", "/camera/color/image_raw"), Image, self.image_processor.image_cb, queue_size=1)
 
 		self.pub_drive = rospy.Publisher(rospy.get_param("~drive_topic", "/vesc/high_level/ackermann_cmd_mux/input/nav_0"), AckermannDriveStamped, queue_size = 1)
 
