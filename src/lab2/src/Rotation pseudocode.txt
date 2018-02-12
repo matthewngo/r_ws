@@ -1,0 +1,27 @@
+Base link -> camera rgb optical frame [from rviz]
+
+Translate x,y,z 0.2538, -0.0262, 0.1983
+Rotate quaternion -0.5, 0.5, -0.5, 0.5
+
+
+Camera rgb optical frame -> camera actual position [from measurement]
+Rotate x CCW ~25 degrees
+
+
+
+
+
+tf.transformations.euler_from_quaternion(q) or quaternion_from_euler(e)
+where q/e is a numpy array
+Quaternion X,Y,Z,W
+Euler Roll,Pitch,Yaw (rotation around x,y,z)
+
+
+
+
+
+Pseudocode:
+euler_from_quaternion for (-0.5, 0.5, -0.5, 0.5)
+roll -= 0.383972  #radians
+generate rotation matrix with the roll/pitch/yaw
+add in the translation from rviz
