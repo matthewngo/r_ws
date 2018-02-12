@@ -146,13 +146,23 @@ class TemplateMatcher:
 
 		self.img = None
 
-		self.templates = []
-		for f in os.listdir("FIND FILEPATH"):
-			print f
+		self.templates = {}
+		for f in listdir("../../../rollout_fudged"):
+			angle = float(f[:-4])
 			#load cv2 image
+			im = cv2.imread("../../../rollout_fudged/"+f, 0)
+
 			#crop it
+			im = im[65:535, 105:720]
+
 			#resize it
+			im = cv2.resize(im, (620,175))
+
 			#make it into a mask
+			im = cv2.cvtColor(im, cv2.COLOR_GRAY2RGB)
+			im = cv2.cvtColor(im, cv2.COLOR_RGB2HSV)
+			im = cv2.inRange(im, np.array([0,0,0]), np.array([179,255,245]))
+			self.templates[angle] = im
 
 
 	def image_cb(self, msg):
@@ -161,7 +171,40 @@ class TemplateMatcher:
 		self.state_lock.release()
 
 	def choose_template(self):
+		if self.img == None:
+			return 0
+
 		self.state_lock.acquire()
-		angle = 0
+		#process image
+		im = self.bridge.imgmsg_to_cv2(msg)
+		im_hsv = cv2.cvtColor(im, cv2.COLOR_RGB2HSV)
+		if(self.use_blue):
+			mask = cv2.inRange(im_hsv, np.array([90,100,100]), np.array([120,255,255]))
+		else:
+			red_1 = cv2.inRange(im_hsv, np.array([0,100,100]), np.array([10,255,255]))
+			red_2 = cv2.inRange(im_hsv, np.array([169,100,100]), np.array([179,255,255]))
+			mask = cv2.bitwise_or(red_1, red_2)
+		crop_img = mask[275:450, :]
+
+		if len(np.nonzero(crop_img)) == 0:
+			self.visible = False
+			self.state_lock.release()
+			return 0
+		else:
+			self.visible = True
+
+		#compare with templates
+		bestangle = 0
+		bestcomp = 0
+		for a, template in self.templates:
+			comp = cv2.bitwise_and(crop_img, template)
+			overlap = len(np.nonzero(comp))
+			if overlap > bestcomp:
+				bestangle = a
+				bestcomp = overlap
+
+		#pick control
+		angle = bestangle
+		
 		self.state_lock.release()
 		return angle
