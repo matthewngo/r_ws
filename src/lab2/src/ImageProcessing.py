@@ -10,7 +10,8 @@ import cv2
 import cv_bridge
 from cv_bridge import CvBridge, CvBridgeError
 
-
+# param for saving intervals
+IMAGE_STEP = 120
 
 class ImageProcessor:
 
@@ -22,6 +23,8 @@ class ImageProcessor:
 			self.state_lock = state_lock
 
 		self.bridge = CvBridge()
+
+		self.counter = 0
 
 		#error goes from -1 (all the way to the left side of the image) to +1 (all the way to the right side of the image)
 		self.curr_error = 0
@@ -50,6 +53,11 @@ class ImageProcessor:
 		#convert message to cv2
 		im = self.bridge.imgmsg_to_cv2(msg)
 
+		# code to extract pictures
+		if self.counter % IMAGE_STEP == 0:
+			cv2.imwrite("./checker_img_" + str(self.counter), im)
+		counter = counter + 1
+
 		#convert rgb to hsv
 		im_hsv = cv2.cvtColor(im, cv2.COLOR_RGB2HSV)
 		
@@ -67,6 +75,9 @@ class ImageProcessor:
 
 		#crop to just the bottom chunk of the screen
 		crop_img = mask[275:450, :]
+
+                #use template matching to obtain new path
+                
 
 		#calculate center of the region of interest (error)
 		#i = 0
@@ -117,5 +128,20 @@ class ImageProcessor:
 		newmsg = self.bridge.cv2_to_imgmsg(mask)
 		self.pub_masked.publish(newmsg)
 
+	def extrinsics(self, msg):
+                rotation_matrix = None
+		translation_vector = [0.254, -0.026, 0.198]
+
+	def intrinsics(self, msg):
+		K = [618.0400390625, 0.0, 321.1227722167969, 0.0, 618.6351318359375, 235.7403106689453, 0.0, 0.0, 1.0]
+		K = np.array(K)
+		K = np.reshape(K, (3, 3))
+
+	def impose_templates(self, msg):
+                #
+		templates = None
+		img = None
+                # convolve?
+		
 
 		self.state_lock.release()
