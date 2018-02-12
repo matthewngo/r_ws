@@ -1,5 +1,5 @@
 2.2.2:
-Our image processing code was publishing at about 6hz with a standard deviation of 0.015 seconds. It's better than our original, but we wanted to use a non-loop method for finding the mean column of the masked pixels. [MORE INFO]
+Our image processing code was publishing at about 6hz with a standard deviation of 0.015 seconds. It's better than our original, but we wanted to use a non-loop method for finding the mean column of the masked pixels. Then we found np.nonzero, which we used to find the mean column and bring us to ~30hz.
 
 
 
@@ -13,4 +13,4 @@ min: 0.000s max: 0.044s std dev: 0.01211s window: 691
 
 
 2.2.3:
-Started out with a constant speed, added in the P value, added D, tried I but it didn't help because of the way error accumulates, increased the section (from rows 350-450 to 275-450) of the image that it masked, then tweaked P, D, and speed until it was able to follow the track
+Started out with a constant speed, added in the P value, added D, tried I but it didn't help because of the way error accumulates, increased the section (from rows 350-450 to 275-450) of the image that it masked, then tweaked P, D, and speed until it was able to follow the track without too much wobble. Then we made it so that when the robot can't see a line, it backs up instead.
