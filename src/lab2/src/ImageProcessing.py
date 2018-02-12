@@ -67,8 +67,6 @@ class ImageProcessor:
 
 		#crop to just the bottom chunk of the screen
 		crop_img = mask[275:450, :]
-		newmsg = self.bridge.cv2_to_imgmsg(crop_img)
-		self.pub_masked.publish(newmsg)
 
 		#calculate center of the region of interest (error)
 		#i = 0
@@ -90,6 +88,7 @@ class ImageProcessor:
 			col_num += 1
 		center = s / (i+0.0001)
 		"""		
+
 		#update error values
 		self.prev_error = self.curr_error
 		self.curr_error = center*2 / msg.width - 1
@@ -111,7 +110,12 @@ class ImageProcessor:
 
 		#print("Error: %.2f %.2f %.5f" % (self.curr_error, self.total_error, self.delta_error))
 
+		#publish cropped image
+		mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
+		mask[0:275,:,2] = 0
+		mask[450:480,:,2] = 0
+		newmsg = self.bridge.cv2_to_imgmsg(mask)
+		self.pub_masked.publish(newmsg)
+
+
 		self.state_lock.release()
-
-
-#publish processed image??
