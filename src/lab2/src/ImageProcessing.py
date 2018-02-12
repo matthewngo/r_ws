@@ -12,8 +12,8 @@ from cv_bridge import CvBridge, CvBridgeError
 
 from os import listdir
 
-# param for saving intervals
-IMAGE_STEP = 120
+import tf.transformations
+import tf
 
 class ImageProcessor:
 
@@ -25,8 +25,6 @@ class ImageProcessor:
 			self.state_lock = state_lock
 
 		self.bridge = CvBridge()
-
-		self.counter = 0
 
 		#error goes from -1 (all the way to the left side of the image) to +1 (all the way to the right side of the image)
 		self.curr_error = 0
@@ -42,6 +40,12 @@ class ImageProcessor:
 
 		self.visible = False
 
+		self.rotation_matrix = np.array([[ -1.60812265e-16,  -3.74606190e-01,   9.27184018e-01, 2.54000000e-01],
+						[ -1.00000000e+00,   6.02412698e-17,  -1.49102562e-16, -2.60000000e-02],
+						[  0.00000000e+00,  -9.27184018e-01,  -3.74606190e-01, 1.98000000e-01],
+						[  0.00000000e+00,   0.00000000e+00,   0.00000000e+00, 1.00000000e+00]])
+
+
 	def image_cb(self, msg):
 		self.state_lock.acquire()
 
@@ -54,14 +58,6 @@ class ImageProcessor:
 		#image processing:
 		#convert message to cv2
 		im = self.bridge.imgmsg_to_cv2(msg)
-
-		# code to extract pictures
-		if self.counter % 3 == 0:
-			print "yo", self.counter
-			cv2.imwrite("/home/mvn3/checkboard_boys/checker_img_" + str(self.counter + 200) + ".png", im)
-			print "done saving", self.counter
-		print self.counter
-		self.counter = self.counter + 1
 
 		#convert rgb to hsv
 		im_hsv = cv2.cvtColor(im, cv2.COLOR_RGB2HSV)
@@ -133,9 +129,13 @@ class ImageProcessor:
 		self.pub_masked.publish(newmsg)
 		self.state_lock.release()
 
-	def extrinsics(self, msg):
-		rotation_matrix = None
-		translation_vector = [0.254, -0.026, 0.198]
+	"""def extrinsics(self, msg):
+		euler = tf.transformations.euler_from_quaternion(np.array([-0.5, 0.5, -0.5, 0.5]))
+		euler = (euler[0] - 0.383972, euler[1], euler[2])
+		rotation_mat = euler_matrix(euler[0], euler[1], euler[2])
+		rotation_mat[:,3] = [0.254, -0.026, 0.198, 1]
+		print rotation_mat
+		return rotation_mat"""
 
 	def intrinsics(self, msg):
 		K = [618.0400390625, 0.0, 321.1227722167969, 0.0, 618.6351318359375, 235.7403106689453, 0.0, 0.0, 1.0]
@@ -148,26 +148,51 @@ class ImageProcessor:
 		img = None
 		# convolve?
 
+"""
+	def euler_matrix(ai, aj, ak, axes='sxyz'):
+		try:
+			firstaxis, parity, repetition, frame = _AXES2TUPLE[axes]
+		except (AttributeError, KeyError):
+			_TUPLE2AXES[axes]  # validation
+			firstaxis, parity, repetition, frame = axes
 
-	def rotation_matrix(angle, direction, point=None):
-		sina = math.sin(angle)
-		cosa = math.cos(angle)
-		direction = unit_vector(direction[:3])
-		# rotation matrix around unit vector
-		R = numpy.diag([cosa, cosa, cosa])
-		R += numpy.outer(direction, direction) * (1.0 - cosa)
-		direction *= sina
-		R += numpy.array([[ 0.0,-direction[2], direction[1]],
-				[ direction[2], 0.0, -direction[0]],
-				[-direction[1], direction[0], 0.0]])
+		i = firstaxis
+		j = _NEXT_AXIS[i+parity]
+		k = _NEXT_AXIS[i-parity+1]
+
+		if frame:
+			ai, ak = ak, ai
+		if parity:
+			ai, aj, ak = -ai, -aj, -ak
+
+		si, sj, sk = math.sin(ai), math.sin(aj), math.sin(ak)
+		ci, cj, ck = math.cos(ai), math.cos(aj), math.cos(ak)
+		cc, cs = ci*ck, ci*sk
+		sc, ss = si*ck, si*sk
+
 		M = numpy.identity(4)
-		M[:3, :3] = R
-		if point is not None:
-			# rotation not around origin
-			point = numpy.array(point[:3], dtype=numpy.float64, copy=False)
-			M[:3, 3] = point - numpy.dot(R, point)
+		if repetition:
+			M[i, i] = cj
+			M[i, j] = sj*si
+			M[i, k] = sj*ci
+			M[j, i] = sj*sk
+			M[j, j] = -cj*ss+cc
+			M[j, k] = -cj*cs-sc
+			M[k, i] = -sj*ck
+			M[k, j] = cj*sc+cs
+			M[k, k] = cj*cc-ss
+		else:
+			M[i, i] = cj*ck
+			M[i, j] = sj*sc-cs
+			M[i, k] = sj*cc+ss
+			M[j, i] = cj*sk
+			M[j, j] = sj*ss+cc
+			M[j, k] = sj*cs-sc
+			M[k, i] = -sj
+			M[k, j] = cj*si
+			M[k, k] = cj*ci
 		return M
-
+"""
 
 
 class TemplateFollower:
