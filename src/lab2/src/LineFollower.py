@@ -7,7 +7,7 @@ from threading import Lock
 from sensor_msgs.msg import Image
 from ackermann_msgs.msg import AckermannDriveStamped
 
-from ImageProcessing import ImageProcessor
+from ImageProcessing import ImageProcessor, TemplateMatcher
 from ImageProcessingExtra import ImageProcessorExtra
 
 EXTRA_CRED_GRAYSCALE = True 
@@ -18,11 +18,12 @@ class LineFollower:
 		#initialize stuff
 		self.state_lock = Lock()
 
-		#DEFFO tweak these later
 		self.k_p = 1.25
 		self.k_i = 0
 		self.k_d = 0.4
 		self.speed = 1
+
+		self.lineFollow = False
 
 		#hook your image processor up to the topic
 		if EXTRA_CRED_GRAYSCALE:
@@ -33,6 +34,9 @@ class LineFollower:
 		else:
 			self.image_processor = ImageProcessor(self.state_lock)
 			self.image_sub = rospy.Subscriber(rospy.get_param("~image_topic", "/camera/color/image_raw"), Image, self.image_processor.image_cb, queue_size=1)
+
+		self.template_matcher = TemplateMatcher(self.state_lock)
+		self.template_sub = rospy.Subscriber(rospy.get_param("~image_topic", "/camera/color/image_raw"), Image, self.template_matcher.image_cb, queue_size=1)
 
 		self.pub_drive = rospy.Publisher(rospy.get_param("~drive_topic", "/vesc/high_level/ackermann_cmd_mux/input/nav_0"), AckermannDriveStamped, queue_size = 1)
 
@@ -55,12 +59,22 @@ if __name__ == '__main__':
 		msg.header.stamp = rospy.Time.now()
 		msg.header.frame_id = "base_link"
 
-		if lf.image_processor.visible == False:
-			msg.drive.steering_angle = 0
-			msg.drive.speed = -1 * lf.speed
+		if lf.lineFollow:
+			if lf.image_processor.visible == False:
+				msg.drive.steering_angle = 0
+				msg.drive.speed = -1 * lf.speed
+			else:
+				msg.drive.steering_angle = lf.angle()
+				msg.drive.speed = lf.speed
 		else:
-			msg.drive.steering_angle = lf.angle()
-			msg.drive.speed = lf.speed
+			ang = lf.template_matcher.choose_template()
+			if lf.template_matcher.visible == False:
+				msg.drive.steering_angle = 0
+				msg.drive.speed =  lf.speed #-1*lf.speed
+			else:
+				msg.drive.steering_angle = ang
+				msg.drive.speed = lf.speed
+			#rospy.sleep(0.5)
 			
 		#print lf.angle()
 		lf.pub_drive.publish(msg)
