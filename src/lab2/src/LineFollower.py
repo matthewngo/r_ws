@@ -10,7 +10,7 @@ from ackermann_msgs.msg import AckermannDriveStamped
 from ImageProcessing import ImageProcessor, TemplateMatcher
 from ImageProcessingExtra import ImageProcessorExtra
 
-EXTRA_CRED_GRAYSCALE = False 
+EXTRA_CRED_GRAYSCALE = True 
 
 class LineFollower:
 
@@ -18,12 +18,18 @@ class LineFollower:
 		#initialize stuff
 		self.state_lock = Lock()
 
+		"""
 		self.k_p = 1.25
 		self.k_i = 0
 		self.k_d = 0.4
-		self.speed = 1
+		"""
 
-		self.lineFollow = False
+		self.k_p = 1
+		self.k_i = 0
+		self.k_d = 0.5
+		self.speed = 0.5
+
+		self.lineFollow = True
 
 		#hook your image processor up to the topic
 		if self.lineFollow:
@@ -32,6 +38,7 @@ class LineFollower:
 				print "get grayed"
 				self.image_sub = rospy.Subscriber("/camera/fisheye/image_raw", Image, self.image_processor.image_cb, queue_size=1)
 			else:
+				print "line_follow_color"
 				self.image_processor = ImageProcessor(self.state_lock)
 				self.image_sub = rospy.Subscriber(rospy.get_param("~image_topic", "/camera/color/image_raw"), Image, self.image_processor.image_cb, queue_size=1)
 		else:

@@ -59,31 +59,24 @@ class ImageProcessor:
 		im = self.bridge.imgmsg_to_cv2(msg)
 		print "yo"
 
-		if len(im.shape) != 2:
-			#convert rgb to hsv
-			im_hsv = cv2.cvtColor(im, cv2.COLOR_RGB2HSV)
+		#convert rgb to hsv
+		im_hsv = cv2.cvtColor(im, cv2.COLOR_RGB2HSV)
 		
-			#threshold red/blue hues; everything else is black
-			if(self.use_blue):
-				mask = cv2.inRange(im_hsv, np.array([90,100,100]), np.array([120,255,255]))
-			else:
-				red_1 = cv2.inRange(im_hsv, np.array([0,100,100]), np.array([10,255,255]))
-				red_2 = cv2.inRange(im_hsv, np.array([169,100,100]), np.array([179,255,255]))
-				mask = cv2.bitwise_or(red_1, red_2)
-
+		#threshold red/blue hues; everything else is black
+		if(self.use_blue):
+			mask = cv2.inRange(im_hsv, np.array([90,100,100]), np.array([120,255,255]))
 		else:
-			print "grayscale detected"
-			# apply gaussian blur and then canny
-			im = cv2.GaussianBlur(im, (3,3), 0)
-			mask = cv2.Canny(im,150,200)
+			red_1 = cv2.inRange(im_hsv, np.array([0,100,100]), np.array([10,255,255]))
+			red_2 = cv2.inRange(im_hsv, np.array([169,100,100]), np.array([179,255,255]))
+			mask = cv2.bitwise_or(red_1, red_2)
 		#newmsg = msg
 		#newmsg = self.bridge.cv2_to_imgmsg(mask)
 		#self.pub_masked.publish(newmsg)
 
 		#crop to just the bottom chunk of the screen
 		crop_img = mask[275:450, :]
-		cv2.imwrite('/home/mvn3/grayscale.png', crop_img)
-		return
+		#cv2.imwrite('/home/mvn3/grayscale.png', crop_img)
+		#return
 
 		#use template matching to obtain new path
 
@@ -205,7 +198,6 @@ class TemplateMatcher:
 		self.state_lock.acquire()
 		self.img = msg
 		self.state_lock.release()
-		print "yo"
 
 	def choose_template(self):
 		if self.img == None:
@@ -219,7 +211,7 @@ class TemplateMatcher:
 			extracted = cv2.inRange(im_hsv, np.array([90,100,100]), np.array([120,255,255]))
 		else:
 			red_1 = cv2.inRange(im_hsv, np.array([0,100,100]), np.array([10,255,255]))
-			red_2 = cv2.inRange(im_hsv, np.array([169,100,100]), np.array([179,255,255]))
+			red_2 = cv2.inRange(im_hsv, np.array([160,100,100]), np.array([179,255,255]))
 			extracted = cv2.bitwise_or(red_1, red_2)
 
 		extracted[0:200, :] = 0
@@ -246,13 +238,12 @@ class TemplateMatcher:
 			angle = self.points_to_angle.get((r, c), None)
 			if angle is None:
 				continue
-			self.last_angle = angle
 			# save template chosen overlaid on image
-			template_im = self.templates[angle][0]
-			out_im = cv2.add(extracted, template_im)
-			filename = "sample" + str(img_sav) + "_" + str(angle) + ".png"
-			cv2.imwrite("/home/nvidia/catkin_ws/src/lab2/src/sample_matching/"+filename, out_im) 
-			img_sav = img_sav + 1
+			#template_im = self.templates[angle][0]
+			#out_im = cv2.add(extracted, template_im)
+			#filename = "sample" + str(img_sav) + "_" + str(angle) + ".png"
+			#cv2.imwrite("/home/nvidia/catkin_ws/src/lab2/src/sample_matching/"+filename, out_im) 
+			#img_sav = img_sav + 1
 			print angle
 			self.visible = True
 			self.state_lock.release()
@@ -260,11 +251,12 @@ class TemplateMatcher:
 				angle = servo_max_angle
 			elif angle < servo_min_angle:
 				angle = servo_min_angle
+			self.last_angle = angle
 			return angle
 
 		self.visible = False
 		self.state_lock.release()
-		print 'fuck'
+		print 'no template matched', self.last_angle
 		return self.last_angle
 
 		# if len(np.nonzero(extracted)[1]) == 0:
