@@ -1,11 +1,11 @@
 3.2.1
-See images.
+See template_visual
 
 3.2.2
-See rollout_fudged. We used 21 constant controls in our kinematic model, evenly spaced between the minimum and maximum angles allowed, with a constant speed.
+See good_rollouts (and all.png within this folder for a view of all the templates). For the interior templates, we used constant controls in our kinematic model, evenly spaced between the minimum and maximum angles the robot's steering servo could operate at, with a constant speed. In addition, we added exterior templates also using the kinematic model with constant speed outside the possible steering range of our robot and mapped those templates to the control associated with the max steering angle on the respective side of the robot. The idea here was that the robot would turn as hard as it could and hopefully continue until it saw the line again by repeating this control once it lost the line visually.
 
 3.2.3
 It runs at 30hz. 
 
 3.2.4
-Each template executes a single control for the entire template. We just set a constant speed and iterated through applicable angles.
+As stated in 3.2.2 we used a constant speed in all our controls and only varied the steering angle at regular intervals within the possible range of steering angles. The interior templates match the steering angles they were generated with whereas the exterior templates match the control associated with the max steering angle on the respective side of the robot. We did not execute a series of controls, only the constant steering angle associated with the template chosen until the next template was chosen (this occurs every frame).

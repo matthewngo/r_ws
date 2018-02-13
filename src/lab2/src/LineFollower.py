@@ -10,7 +10,7 @@ from ackermann_msgs.msg import AckermannDriveStamped
 from ImageProcessing import ImageProcessor, TemplateMatcher
 from ImageProcessingExtra import ImageProcessorExtra
 
-EXTRA_CRED_GRAYSCALE = True 
+EXTRA_CRED_GRAYSCALE = False 
 
 class LineFollower:
 
@@ -26,17 +26,17 @@ class LineFollower:
 		self.lineFollow = False
 
 		#hook your image processor up to the topic
-		if EXTRA_CRED_GRAYSCALE:
-			self.image_processor = ImageProcessorExtra(self.state_lock)
-			print "get grayed"
-			self.image_sub = rospy.Subscriber("/camera/fisheye/image_raw", Image, self.image_processor.image_cb, queue_size=1)
-                        print "grayed af"
+		if self.lineFollow:
+			if EXTRA_CRED_GRAYSCALE:
+				self.image_processor = ImageProcessorExtra(self.state_lock)
+				print "get grayed"
+				self.image_sub = rospy.Subscriber("/camera/fisheye/image_raw", Image, self.image_processor.image_cb, queue_size=1)
+			else:
+				self.image_processor = ImageProcessor(self.state_lock)
+				self.image_sub = rospy.Subscriber(rospy.get_param("~image_topic", "/camera/color/image_raw"), Image, self.image_processor.image_cb, queue_size=1)
 		else:
-			self.image_processor = ImageProcessor(self.state_lock)
-			self.image_sub = rospy.Subscriber(rospy.get_param("~image_topic", "/camera/color/image_raw"), Image, self.image_processor.image_cb, queue_size=1)
-
-		self.template_matcher = TemplateMatcher(self.state_lock)
-		self.template_sub = rospy.Subscriber(rospy.get_param("~image_topic", "/camera/color/image_raw"), Image, self.template_matcher.image_cb, queue_size=1)
+			self.template_matcher = TemplateMatcher(self.state_lock)
+			self.template_sub = rospy.Subscriber(rospy.get_param("~image_topic", "/camera/color/image_raw"), Image, self.template_matcher.image_cb, queue_size=1)
 
 		self.pub_drive = rospy.Publisher(rospy.get_param("~drive_topic", "/vesc/high_level/ackermann_cmd_mux/input/nav_0"), AckermannDriveStamped, queue_size = 1)
 

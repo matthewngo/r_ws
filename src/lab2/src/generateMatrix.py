@@ -1,15 +1,8 @@
-import rospy 
 import numpy
 from threading import Lock
 
-from sensor_msgs.msg import Image
-
-import cv2
-import cv_bridge
-from cv_bridge import CvBridge, CvBridgeError
-
 import tf.transformations
-#import tf
+import tf
 
 import math
 
@@ -35,6 +28,31 @@ _AXES2TUPLE = {
 
 _TUPLE2AXES = dict((v, k) for k, v in _AXES2TUPLE.items())
 
+def quaternion_matrix(quaternion):
+    """Return homogeneous rotation matrix from quaternion.
+
+    >>> M = quaternion_matrix([0.99810947, 0.06146124, 0, 0])
+    >>> numpy.allclose(M, rotation_matrix(0.123, [1, 0, 0]))
+    True
+    >>> M = quaternion_matrix([1, 0, 0, 0])
+    >>> numpy.allclose(M, numpy.identity(4))
+    True
+    >>> M = quaternion_matrix([0, 1, 0, 0])
+    >>> numpy.allclose(M, numpy.diag([1, -1, -1, 1]))
+    True
+
+    """
+    q = numpy.array(quaternion, dtype=numpy.float64, copy=True)
+    n = numpy.dot(q, q)
+    if n < _EPS:
+        return numpy.identity(4)
+    q *= math.sqrt(2.0 / n)
+    q = numpy.outer(q, q)
+    return numpy.array([
+        [1.0-q[2, 2]-q[3, 3],     q[1, 2]-q[3, 0],     q[1, 3]+q[2, 0], 0.0],
+        [    q[1, 2]+q[3, 0], 1.0-q[1, 1]-q[3, 3],     q[2, 3]-q[1, 0], 0.0],
+        [    q[1, 3]-q[2, 0],     q[2, 3]+q[1, 0], 1.0-q[1, 1]-q[2, 2], 0.0],
+        [                0.0,                 0.0,                 0.0, 1.0]])
 
 def euler_matrix(ai, aj, ak, axes='sxyz'):
     """Return homogeneous rotation matrix from Euler angles and axis sequence.
@@ -100,9 +118,13 @@ def euler_matrix(ai, aj, ak, axes='sxyz'):
 
 
 #quat = numpy.array([-0.5, 0.5, -0.5, 0.5])
-quat = numpy.array([0.59971, -0.59971, 0.37463, -0.37463])
-eu = tf.transformations.euler_from_quaternion(quat)
+# quat = numpy.array([0.59971, -0.59971, 0.37463, -0.37463])
+quat = numpy.array([0.600, -0.600, 0.375, 0.375])
+matrix = tf.transformations.quaternion_matrix(quat)
+# eu = tf.transformations.euler_from_quaternion(quat)
 #eu = (eu[0] - 0.383972, eu[1], eu[2])
-matrix = euler_matrix(eu[0], eu[1], eu[2])
-matrix[:3,3] = [0.2538, -0.0262, 0.1983]
-print matrix
+# matrix = euler_matrix(eu[0], eu[1], eu[2])
+# matrix[:3,3] = [0.2538, -0.0262, 0.1983]
+matrix[:3,3] = [-0.026, 0.289, -0.141]
+matrix
+print repr(matrix)

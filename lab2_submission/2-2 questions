@@ -1,7 +1,8 @@
+2.2.1:
+See 2-2-1.png
+
 2.2.2:
 Our image processing code was publishing at about 6hz with a standard deviation of 0.015 seconds. It's better than our original, but we wanted to use a non-loop method for finding the mean column of the masked pixels. Then we found np.nonzero, which we used to find the mean column and bring us to ~30hz.
-
-
 
 BEFORE 
 average rate: 5.984
