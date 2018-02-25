@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
 import time
 import sys
 import rospy
@@ -9,6 +13,7 @@ import scipy.signal
 import utils as Utils
 
 import torch
+import torch.nn as nn
 import torch.utils.data
 from torch.autograd import Variable
 
@@ -95,57 +100,89 @@ raw_datas = raw_datas[:idx, :] # Clip to only data found from bag file
 raw_datas = raw_datas[ np.abs(raw_datas[:,3]) < 0.75 ] # discard bad controls
 raw_datas = raw_datas[ np.abs(raw_datas[:,4]) < 0.36 ] # discard bad controls
 
-# Shuffle data
-np.random.shuffle(raw_datas)
-
 x_datas = np.zeros( (raw_datas.shape[0], INPUT_SIZE) )
 y_datas = np.zeros( (raw_datas.shape[0], OUTPUT_SIZE) )
 
-# TODO: put raw_ into x_ and y_ and filter
-x_datas[1:,0] = np.diff(raw_datas[:,0])
-x_datas[1:,1] = np.diff(raw_datas[:,1])
-x_datas[1:,2] = np.diff(raw_datas[:,2])
-x_datas[:,3] = np.sin(raw_datas[:,2])
-x_datas[:,4] = np.cos(raw_datas[:,2])
-x_datas[:,5] = raw_datas[:,3]
-x_datas[:,6] = raw_datas[:,4]
-x_datas[1:,7] = np.diff(raw_datas[:,5])
+pose_dot = np.zeros( (raw_datas.shape[0] - 1, 3) )
+pose_dot[:,0] = np.diff(raw_datas[:,0])
+pose_dot[:,1] = np.diff(raw_datas[:,1])
+pose_dot[:,2] = np.diff(raw_datas[:,2])
+dt = np.diff(raw_datas[:,5])
+#pose_dot[:,0] = pose_dot[:,0] / (55*dt)
+#pose_dot[:,1] = pose_dot[:,1] / (55*dt)
+#pose_dot[:,2] = pose_dot[:,2] / (55*dt)
 
-y_datas[:-1,0] = np.diff(raw_datas[:,0])
-y_datas[:-1,1] = np.diff(raw_datas[:,1])
-y_datas[:-1,2] = np.diff(raw_datas[:,2])
-
-# TODO
+# TODO (done)
 # It is critical we properly handle theta-rollover: 
 # as -pi < theta < pi, theta_dot can be > pi, so we have to handle those
 # cases to keep theta_dot also between -pi and pi
-#gt = pose_dot[:,2] > np.pi
-#pose_dot[gt,2] = pose_dot[gt,2] - 2*np.pi
+gt = pose_dot[:,2] > np.pi
+pose_dot[gt,2] = pose_dot[gt,2] - 2*np.pi
 
-# TODO
+gt = pose_dot[:,2] < -np.pi
+pose_dot[gt,2] = pose_dot[gt,2] + 2*np.pi
+
+# TODO (done?)
 # Some raw values from sensors / particle filter may be noisy. It is safe to
 # filter the raw values to make them more well behaved. We recommend something
 # like a Savitzky-Golay filter. You should confirm visually (by plotting) that
 # your chosen smoother works as intended.
 # An example of what this may look like is in the homework document.
+def filter(input):
+	return scipy.signal.savgol_filter(input, 7, 3)
+
+plt.plot(pose_dot[:,0], color='r')
+
+pose_dot[:,0] = filter(pose_dot[:,0])
+pose_dot[:,1] = filter(pose_dot[:,1])
+pose_dot[:,2] = filter(pose_dot[:,2])
+
+plt.plot(pose_dot[:,0], color='b')
+plt.figure().savefig("xdot.png")
+
+# Fill in x_datas and y_datas
+x_datas[1:,0] = pose_dot[:,0]
+x_datas[1:,1] = pose_dot[:,1]
+x_datas[1:,2] = pose_dot[:,2]
+x_datas[:,3] = np.sin(raw_datas[:,2])
+x_datas[:,4] = np.cos(raw_datas[:,2])
+x_datas[:,5] = raw_datas[:,3]
+x_datas[:,6] = raw_datas[:,4]
+x_datas[1:,7] = dt
+
+y_datas[:-1,0] = pose_dot[:,0]
+y_datas[:-1,1] = pose_dot[:,1]
+y_datas[:-1,2] = pose_dot[:,2]
+
+# remove first and last datapoint
+x_datas = np.delete(x_datas, (0), axis=0)
+x_datas = np.delete(x_datas, (-1), axis=0)
+y_datas = np.delete(y_datas, (0), axis=0)
+y_datas = np.delete(y_datas, (-1), axis=0)
+
+# TODO (done): shuffle data intelligently
+rnd = np.arange(x_datas.shape[0])
+np.random.shuffle(rnd)
+x_datas = x_datas[rnd]
+y_datas = y_datas[rnd]
 
 # Convince yourself that input/output values are not strange
-print("Xdot  ", np.min(x_datas[:,0]), np.max(x_datas[:,0]))
-print("Ydot  ", np.min(x_datas[:,1]), np.max(x_datas[:,1]))
-print("Tdot  ", np.min(x_datas[:,2]), np.max(x_datas[:,2]))
-print("sin   ", np.min(x_datas[:,3]), np.max(x_datas[:,3]))
-print("cos   ", np.min(x_datas[:,4]), np.max(x_datas[:,4]))
-print("vel   ", np.min(x_datas[:,5]), np.max(x_datas[:,5]))
-print("delt  ", np.min(x_datas[:,6]), np.max(x_datas[:,6]))
-print("dt    ", np.min(x_datas[:,7]), np.max(x_datas[:,7]))
+print("Xdot  ", np.min(x_datas[:,0]), np.max(x_datas[:,0]), np.mean(x_datas[:,0]))
+print("Ydot  ", np.min(x_datas[:,1]), np.max(x_datas[:,1]), np.mean(x_datas[:,1]))
+print("Tdot  ", np.min(x_datas[:,2]), np.max(x_datas[:,2]), np.mean(x_datas[:,2]))
+print("sin   ", np.min(x_datas[:,3]), np.max(x_datas[:,3]), np.mean(x_datas[:,3]))
+print("cos   ", np.min(x_datas[:,4]), np.max(x_datas[:,4]), np.mean(x_datas[:,4]))
+print("vel   ", np.min(x_datas[:,5]), np.max(x_datas[:,5]), np.mean(x_datas[:,5]))
+print("delt  ", np.min(x_datas[:,6]), np.max(x_datas[:,6]), np.mean(x_datas[:,6]))
+print("dt    ", np.min(x_datas[:,7]), np.max(x_datas[:,7]), np.mean(x_datas[:,7]))
 print()
-print("y Xdot", np.min(y_datas[:,0]), np.max(y_datas[:,0]))
-print("y Ydot", np.min(y_datas[:,1]), np.max(y_datas[:,1]))
-print("y Tdot", np.min(y_datas[:,2]), np.max(y_datas[:,2]))
+print("y Xdot", np.min(y_datas[:,0]), np.max(y_datas[:,0]), np.mean(x_datas[:,0]))
+print("y Ydot", np.min(y_datas[:,1]), np.max(y_datas[:,1]), np.mean(x_datas[:,1]))
+print("y Tdot", np.min(y_datas[:,2]), np.max(y_datas[:,2]), np.mean(x_datas[:,2]))
 
 ######### NN stuff
 dtype = torch.cuda.FloatTensor
-D_in, H, D_out = INPUT_SIZE, 16, OUTPUT_SIZE
+D_in, H, D_out = INPUT_SIZE, 32, OUTPUT_SIZE
 
 # Make validation set
 num_samples = x_datas.shape[0]
@@ -163,19 +200,19 @@ y = torch.from_numpy(y_tr.astype('float32')).type(dtype)
 x_val = torch.from_numpy(x_tt.astype('float32')).type(dtype)
 y_val = torch.from_numpy(y_tt.astype('float32')).type(dtype)
 
-# TODO
+# TODO (done?)
 # specify your neural network (or other) model here.
 model = nn.Sequential(
     nn.Linear(D_in, H),
     nn.ReLU(),
+    #nn.Sigmoid(),
     nn.Linear(H, D_out),
 )
+model = model.cuda()
 
 loss_fn = torch.nn.MSELoss(size_average=False)
 learning_rate = 1e-3
 opt = torch.optim.Adam(model.parameters(), lr=1e-3) #learning_rate)
-
-doTraining(model, "test.out", opt, 500)
 
 def doTraining(model, filename, optimizer, N=5000):
     for t in range(N):
@@ -230,3 +267,5 @@ def test_model(m, N, dt = 0.1):
     nn_input[7] = dt
     rollout(m, nn_input, N)
 
+doTraining(model, "test.out", opt, 5000)
+test_model(model, 10)
