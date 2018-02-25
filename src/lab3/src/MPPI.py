@@ -120,7 +120,14 @@ class MPPIController:
 
     # MPPI should
     # generate noise according to sigma
+    noise = self.sigma
+    controls = torch.cuda.FloatTensor(T, 2).zero_()
+    numpy_noise = np.random.normal(0, noise, (K, T))
+    e_thingy = torch.cuda.FloatTensor(numpy_noise)
+    score_tensor = torch.cuda.FloatTensor(K).zero_()
+
     # combine that noise with your central control sequence
+    
     # Perform rollouts with those controls from your current pose
     # Calculate costs for each of K trajectories
     # Perform the MPPI weighting on your calculatd costs
