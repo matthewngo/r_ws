@@ -1,0 +1,9 @@
+Section 2 TO DO:
+
+Make xdot and ydot actually correct
+
+Report validation set error for xdot, ydot, thetadot
+
+Run rollouts and plot the results
+
+Explain neural net

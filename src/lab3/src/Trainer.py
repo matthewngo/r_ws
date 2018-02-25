@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import matplotlib
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 import time
@@ -129,7 +129,7 @@ pose_dot[gt,2] = pose_dot[gt,2] + 2*np.pi
 # your chosen smoother works as intended.
 # An example of what this may look like is in the homework document.
 def filter(input):
-	return scipy.signal.savgol_filter(input, 7, 3)
+	return scipy.signal.savgol_filter(input, 9, 3)
 
 plt.plot(pose_dot[:,0], color='r')
 
@@ -138,7 +138,7 @@ pose_dot[:,1] = filter(pose_dot[:,1])
 pose_dot[:,2] = filter(pose_dot[:,2])
 
 plt.plot(pose_dot[:,0], color='b')
-plt.figure().savefig("xdot.png")
+#plt.show()
 
 # Fill in x_datas and y_datas
 x_datas[1:,0] = pose_dot[:,0]
