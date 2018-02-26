@@ -119,8 +119,8 @@ dt = np.diff(raw_datas[:,5])
 gt = pose_dot[:,2] > np.pi
 pose_dot[gt,2] = pose_dot[gt,2] - 2*np.pi
 
-gt = pose_dot[:,2] < -np.pi
-pose_dot[gt,2] = pose_dot[gt,2] + 2*np.pi
+lt = pose_dot[:,2] < -np.pi
+pose_dot[lt,2] = pose_dot[lt,2] + 2*np.pi
 
 # TODO (done?)
 # Some raw values from sensors / particle filter may be noisy. It is safe to
@@ -129,7 +129,7 @@ pose_dot[gt,2] = pose_dot[gt,2] + 2*np.pi
 # your chosen smoother works as intended.
 # An example of what this may look like is in the homework document.
 def filter(input):
-	return scipy.signal.savgol_filter(input, 9, 3)
+	return scipy.signal.savgol_filter(input, 7, 3)
 
 plt.plot(pose_dot[:,0], color='r')
 
@@ -144,8 +144,8 @@ plt.plot(pose_dot[:,0], color='b')
 x_datas[1:,0] = pose_dot[:,0]
 x_datas[1:,1] = pose_dot[:,1]
 x_datas[1:,2] = pose_dot[:,2]
-x_datas[:,3] = np.sin(raw_datas[:,2])
-x_datas[:,4] = np.cos(raw_datas[:,2])
+x_datas[:,3] = np.cos(raw_datas[:,2])
+x_datas[:,4] = np.sin(raw_datas[:,2])
 x_datas[:,5] = raw_datas[:,3]
 x_datas[:,6] = raw_datas[:,4]
 x_datas[1:,7] = dt
@@ -236,7 +236,8 @@ def doTraining(model, filename, optimizer, N=5000):
 # i.e. a velocity value of 0.7 should drive the car to a positive x value.
 def rollout(m, nn_input, N):
     pose = torch.zeros(3).cuda()
-    print(pose.cpu().numpy())
+    #print(pose.cpu().numpy())
+    print str(pose[0]) + "\t" + str(pose[1])
     for i in range(N):
         out = m(Variable(nn_input))
         pose.add_(out.data)
@@ -248,24 +249,59 @@ def rollout(m, nn_input, N):
         nn_input[0] = out.data[0]
         nn_input[1] = out.data[1]
         nn_input[2] = out.data[2]
-        nn_input[3] = pose[2]
-        print(pose.cpu().numpy())
- 
+        #nn_input[3] = pose[2]
+        nn_input[3] = np.cos(pose[2])
+        nn_input[4] = np.sin(pose[2])
+        #print(pose.cpu().numpy())
+        print str(pose[0]) + "\t" + str(pose[1])
+
+def make_input(v, delta, dt):
+	ret = torch.zeros(INPUT_SIZE).cuda()
+	ret[3] = np.cos(0)
+	ret[4] = np.sin(0)
+	ret[5] = v
+	ret[6] = delta
+	ret[7] = dt
+	return ret
+
 def test_model(m, N, dt = 0.1):
-    cos, v, st = 4, 5, 6
     s = INPUT_SIZE 
     print("Nothing")
-    nn_input = torch.zeros(s).cuda()
-    nn_input[cos] = 1.0
-    nn_input[7] = dt
+    nn_input = make_input(0, 0, dt)
     rollout(m, nn_input, N)
+    print("")
 
     print("Forward")
-    nn_input = torch.zeros(s).cuda()
-    nn_input[cos] = 1.0
-    nn_input[v] = 0.7 #1.0
-    nn_input[7] = dt
+    nn_input = make_input(0.7, 0, dt)
     rollout(m, nn_input, N)
+    print("")
+
+    print("Backward")
+    nn_input = make_input(-0.7, 0, dt)
+    rollout(m, nn_input, N)
+    print("")
+
+    print("Left")
+    nn_input = make_input(0.7, -0.25, dt)
+    rollout(m, nn_input, N)
+    print("")
+
+    print("Right")
+    nn_input = make_input(0.7, 0.3, dt)
+    rollout(m, nn_input, N)
+    print("")
 
 doTraining(model, "test.out", opt, 5000)
-test_model(model, 10)
+#test_model(model, 10)
+
+# Reporting validation set error
+xerr, yerr, therr = 0,0,0
+valsize = x_val.shape[0]
+for i in range(valsize):
+	y_pred = model(Variable(x_val[i]))
+	xerr += abs(y_val[i][0] - y_pred.data[0])
+	yerr += abs(y_val[i][1] - y_pred.data[1])
+	therr += abs(y_val[i][2] - y_pred.data[2])
+print xerr / valsize
+print yerr / valsize
+print therr / valsize

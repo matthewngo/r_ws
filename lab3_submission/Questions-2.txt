@@ -1,9 +1,10 @@
 Section 2 TO DO:
 
-Make xdot and ydot actually correct
+Validation set error:
+X: 0.00518432471578
+Y: 0.00714971440552
+Z: 0.00722242838414
 
-Report validation set error for xdot, ydot, thetadot
+Rollouts: see images "Rollout_*.png" (In the order from the assignment spec the images are named: nothing, forward, backward, right, left)
 
-Run rollouts and plot the results
-
-Explain neural net
+The neural net is a simple one based off of the sample code: sequential, with a linear layer, a ReLU layer, and another linear layer. The inner layer uses 32 hidden nodes.
