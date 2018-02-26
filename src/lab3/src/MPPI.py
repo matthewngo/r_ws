@@ -33,6 +33,12 @@ class MPPIController:
     self.sigma = sigma
     self._lambda = _lambda
 
+    self.controls = torch.cuda.FloatTensor(T, 2).zero_()
+    self.score_tensor = torch.cuda.FloatTensor(K).zero_()
+    self.weights = torch.cuda.FloatTensor(K).zero_()
+    self.poses = torch.cuda.FloatTensor(K, T + 1, 3).zero_()
+    self.e_thingy = torch.cuda.FloatTensor(K, T, 2)
+
     self.goal = None # Lets keep track of the goal pose (world frame) over time
     self.lasttime = None
 
@@ -106,9 +112,17 @@ class MPPIController:
     # smooth
     # You should feel free to explore other terms to get better or unique
     # behavior
-    pose_cost = 0.0
-    bounds_check = 0.0
-    ctrl_cost = 0.0
+    pose_cost = 10
+    bounds_check = 100
+    ctrl_cost = 5
+
+    cost = 0
+
+    out_of_bounds = 0
+
+    cost += pose_cost * (pose - goal)
+    cost += bounds_check * out_of_bounds
+    cost += ctr_being_notsmooth
 
     return pose_cost + ctrl_cost + bounds_check
 
@@ -120,30 +134,52 @@ class MPPIController:
 
     # MPPI should
     # generate noise according to sigma
-    noise = self.sigma
-    controls = torch.cuda.FloatTensor(T, 2).zero_()
-    numpy_noise = np.random.normal(0, noise, (K, T, 2))
-    e_thingy = torch.cuda.FloatTensor(numpy_noise)
-    score_tensor = torch.cuda.FloatTensor(K).zero_()
-
-    for k in range(K):
-      e_thingy_for_k = e_thingy[k]
-      x_arr = np.zeros(T)
-      x_arr[0] = init_pose
-      for t in range(1, T):
-        noisy_controls = (controls[t-1,0] + e_thingy[k, t-1, 0], controls[t-1, 1] + e_thingy[k, t-1, 1])
-        x_arr[t] = maggies_neural_net(x_arr[t-1], noisy_controls)
-        score_tensor[k] += q(x_arr[t]) + self._lambda * 
-
-
     # combine that noise with your central control sequence
-    noised_controls = controls + e_thingy[
     # Perform rollouts with those controls from your current pose
     # Calculate costs for each of K trajectories
     # Perform the MPPI weighting on your calculatd costs
     # Scale the added noise by the weighting and add to your control sequence
     # Apply the first control values, and shift your control trajectory
-    
+
+
+    noise = self.sigma
+    controls = self.controls
+    numpy_noise = np.random.normal(0, noise, (K, T, 2))
+    e_thingy = self.e_thingy
+    e_thingy[:, :, :] = torch.normal(std=torch.Tensor((([noise] * K) * T) * 2))
+    score_tensor = self.score_tensor.zero_()
+    weights = self.weights.zero_()
+    poses = self.poses.zero_()
+
+    for k in range(K):
+      poses[k, 0, :] = init_pose
+      for t in range(1, T + 1):
+        noisy_controls = (controls[t-1,0] + e_thingy[k, t-1, 0], controls[t-1, 1] + e_thingy[k, t-1, 1])
+        # TODO: Replace with actual neural net
+        # ∆xt,∆yt,∆θt,cos(θt),sin(θt),vt,δt,dt_t
+        poses[k, t, :] = maggies_neural_net(poses[k, t-1, :], noisy_controls)
+        # TODO: Replace with actual cost function and figure this shit out
+        score_tensor[k] += self.running_cost(poses[k, t, :], self.goal, controls[t - 1, :], e_thingy[k, t - 1, :])
+      # TODO: Replace with actual cost for final pose and goal
+      score_tensor[k] += phi(poses[k, T, :])  # additional cost based on final pose
+    beta = torch.min(score_tensor)
+    norm = torch.sum(torch.exp((-1 / self._lambda) * (score_tensor - beta)))
+    weights = (1 / norm) * torch.exp((-1 / self._lambda) * (score_tensor - beta))
+    controls[:, 0] += torch.sum(weights * e_thingy[K, :, 0])
+    controls[:, 1] += torch.sum(weights * e_thingy[K, :, 1])
+
+    # repeat the weights along time
+    weights_r = torch.t(weights.repeat(T, 1))
+    # apply to controls
+    controls[:, 0] += torch.sum(torch.mul(weights_r, e_thingy[:, :, 0]), 0)
+    controls[:, 1] += torch.sum(torch.mul(weights_r, e_thingy[:, :, 1]), 0)
+
+    run_ctrl = (controls[0, 0], controls[0, 1])
+    controls[:-1, :] = controls[1:, :]
+    # controls[-1, 0] = 0
+    # controls[-1, 1] = 0
+
+
     # Notes:
     # MPPI can be assisted by carefully choosing lambda, and sigma
     # It is advisable to clamp the control values to be within the feasible range
