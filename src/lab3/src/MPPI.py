@@ -17,7 +17,7 @@ from vesc_msgs.msg import VescStateStamped
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped, PoseArray, PoseWithCovarianceStamped, PointStamped
 
-import Trainer
+#import Trainer
 import math
 
 class MPPIController:
@@ -170,7 +170,7 @@ class MPPIController:
         if t > 1:
         	prior = poses[k, t-2,:]
 
-        Trainer.make_input_mppi(self.nn_input, prior, poses[k, t-1,:], noisy_controls)
+        make_input_mppi(self.nn_input, prior, poses[k, t-1,:], noisy_controls)
         poses[k, t, :] = self.model(Variable(self.nn_input)) + poses[k, t-1, :]
 
         # TODO: Replace with actual cost function and figure this shit out
@@ -291,3 +291,12 @@ if __name__ == '__main__':
   mp = MPPIController(T, K, sigma, _lambda)
   test_MPPI(mp, 10, np.array([0.,0.,0.]))
 
+def make_input_mppi(ret_buff, prior, after, control, dt=0.1):
+    ret_buff[0] = after[0] - prior[0]
+    ret_buff[1] = after[1] - prior[1]
+    ret_buff[2] = after[2] - prior[2]
+    ret_buff[3] = np.cos(after[2])
+    ret_buff[4] = np.sin(after[2])
+    ret_buff[5] = control[0]
+    ret_buff[6] = control[1]
+    ret_buff[7] = dt
