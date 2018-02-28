@@ -264,6 +264,16 @@ def make_input(v, delta, dt):
 	ret[7] = dt
 	return ret
 
+def make_input_mppi(ret_buff, prior, after, control, dt=0.1):
+    ret_buff[0] = after[0] - prior[0]
+    ret_buff[1] = after[1] - prior[1]
+    ret_buff[2] = after[2] - prior[2]
+    ret_buff[3] = np.cos(after[2])
+    ret_buff[4] = np.sin(after[2])
+    ret_buff[5] = control[0]
+    ret_buff[6] = control[1]
+    ret_buff[7] = dt
+
 def test_model(m, N, dt = 0.1):
     s = INPUT_SIZE 
     print("Nothing")

@@ -1,0 +1,13 @@
+
+<launch>
+
+	<arg name="image_topic" default="/camera/color/image_raw"/>
+	<arg name="drive_topic" default="/vesc/high_level/ackermann_cmd_mux/input/nav_0"/>
+	<arg name="nn_model" default="test.out"/>
+	<node pkg="lab3" type="MPPI.py" name="MPPI" output="screen">
+		<param name="image_topic" value="$(arg image_topic)"/>
+		<param name="drive_topic" value="$(arg drive_topic)"/>
+		<param name="nn_model" value="$(arg nn_model)"/>
+	</node>
+
+</launch>

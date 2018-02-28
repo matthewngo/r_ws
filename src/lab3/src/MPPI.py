@@ -17,6 +17,9 @@ from vesc_msgs.msg import VescStateStamped
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped, PoseArray, PoseWithCovarianceStamped, PointStamped
 
+import Trainer
+import math
+
 class MPPIController:
 
   def __init__(self, T, K, sigma=0.5, _lambda=0.5):
@@ -39,6 +42,8 @@ class MPPIController:
     self.poses = torch.cuda.FloatTensor(K, T + 1, 3).zero_()
     self.e_thingy = torch.cuda.FloatTensor(K, T, 2)
 
+    self.nn_input = torch.cuda.FloatTensor(8).zero_()
+
     self.goal = None # Lets keep track of the goal pose (world frame) over time
     self.lasttime = None
 
@@ -46,7 +51,7 @@ class MPPIController:
     # TODO
     # you should pre-allocate GPU memory when you can, and re-use it when
     # possible for arrays storing your controls or calculated MPPI costs, etc
-    model_name = rospy.get_param("~nn_model", "myneuralnetisbestneuralnet.pt")
+    model_name = rospy.get_param("~nn_model", "test.out")
     self.model = torch.load(model_name)
     self.model.cuda() # tell torch to run the network on the GPU
     self.dtype = torch.cuda.FloatTensor
@@ -114,17 +119,22 @@ class MPPIController:
     # behavior
     pose_cost = 10
     bounds_check = 100
-    ctrl_cost = 5
 
     cost = 0
 
+    # TODO figure out how to check out of bounds
     out_of_bounds = 0
 
-    cost += pose_cost * (pose - goal)
+    ctr_being_notsmooth_a = self._lambda * ctrl[0] * (1.0 / self.sigma) * noise[0]
+    ctr_being_notsmooth_b = self._lambda * ctrl[1] * (1.0 / self.sigma) * noise[1]
+
+    ctr_being_notsmooth = math.sqrt(ctr_being_notsmooth_a ** 2 + ctr_being_notsmooth_b ** 2)
+
+    cost += pose_cost * sum(pose - goal)
     cost += bounds_check * out_of_bounds
     cost += ctr_being_notsmooth
 
-    return pose_cost + ctrl_cost + bounds_check
+    return cost
 
   def mppi(self, init_pose, init_input):
     t0 = time.time()
@@ -155,13 +165,17 @@ class MPPIController:
       poses[k, 0, :] = init_pose
       for t in range(1, T + 1):
         noisy_controls = (controls[t-1,0] + e_thingy[k, t-1, 0], controls[t-1, 1] + e_thingy[k, t-1, 1])
-        # TODO: Replace with actual neural net
-        # ∆xt,∆yt,∆θt,cos(θt),sin(θt),vt,δt,dt_t
-        poses[k, t, :] = maggies_neural_net(poses[k, t-1, :], noisy_controls)
+
+        prior = poses[k, t-1,:]
+        if t > 1:
+        	prior = poses[k, t-2,:]
+
+        Trainer.make_input_mppi(self.nn_input, prior, poses[k, t-1,:], noisy_controls)
+        poses[k, t, :] = self.model(Variable(self.nn_input)) + poses[k, t-1, :]
+
         # TODO: Replace with actual cost function and figure this shit out
         score_tensor[k] += self.running_cost(poses[k, t, :], self.goal, controls[t - 1, :], e_thingy[k, t - 1, :])
-      # TODO: Replace with actual cost for final pose and goal
-      score_tensor[k] += phi(poses[k, T, :])  # additional cost based on final pose
+
     beta = torch.min(score_tensor)
     norm = torch.sum(torch.exp((-1 / self._lambda) * (score_tensor - beta)))
     weights = (1 / norm) * torch.exp((-1 / self._lambda) * (score_tensor - beta))
@@ -275,5 +289,5 @@ if __name__ == '__main__':
 
   # test & DEBUG
   mp = MPPIController(T, K, sigma, _lambda)
-  test_MPPI(mp, 10, np.array([0.,0.,0.])))
+  test_MPPI(mp, 10, np.array([0.,0.,0.]))
 
