@@ -80,7 +80,7 @@ class MPPIController:
     self.msgid = 0
 
     # visualization paramters
-    self.num_viz_paths = 1
+    self.num_viz_paths = 5
     if self.K < self.num_viz_paths:
         self.num_viz_paths = self.K
 
@@ -129,8 +129,13 @@ class MPPIController:
                           Utils.quaternion_to_angle(msg.pose.orientation)])
     print("Current Pose: ", self.last_pose)
     print("SETTING Goal: ", self.goal)
+    self.controls = torch.cuda.FloatTensor(T, 2).zero_()
+    self.poses = torch.cuda.FloatTensor(K, T + 1, 3).zero_()
+    self.controls = torch.cuda.FloatTensor(T, 2).zero_()
+    self.score_tensor = torch.cuda.FloatTensor(K).zero_()
+    self.weights = torch.cuda.FloatTensor(K).zero_()
     
-  def running_cost(self, poses, goal, ctrl, noise, score_tensor):
+  def running_cost(self, poses, goal, ctrl, prev_ctrl, noise, prev_noise, score_tensor):
     # TODO
     # This cost function drives the behavior of the car. You want to specify a
     # cost function that penalizes behavior that is bad with high cost, and
@@ -140,40 +145,46 @@ class MPPIController:
     # smooth
     # You should feel free to explore other terms to get better or unique
     # behavior
-    pose_cost = 100
+    pose_cost = 1000
     bounds_check = 999999999
-    control_cost = 10
-    noise_cost = 100000
+    control_cost = 0
+    noise_cost = 0
+    reverse_cost = 10
 
+    # transform poses to pixels for bounds checking
     self.poses_pixels[:, 0] = (poses[:,0] - self.map_x) / 0.02
     self.poses_pixels[:, 1] = (poses[:,1] - self.map_y) / 0.02
-    
+
+
+    # penalize poses farther from the goal
+    self.goal_tensor[0] = goal[0]
+    self.goal_tensor[1] = goal[1]
+    score_tensor[:] += pose_cost * torch.sqrt(torch.sum(torch.pow(poses[:, :2] - self.goal_tensor[:2].repeat(K, 1), 2), 1))
+
+    #score_tensor[:] += 0.1 * pose_cost * torch.pow(poses[:, 2] - self.goal_tensor[2], 2)
+
+    # apply penalty for non-smooth controls
 
     ctr_being_notsmooth_a = self._lambda * ctrl[0] * (1.0 / self.sigma) * noise[:, 0]
     ctr_being_notsmooth_b = self._lambda * ctrl[1] * (1.0 / self.sigma) * noise[:, 1]
-
-    ctr_being_notsmooth = torch.sqrt(ctr_being_notsmooth_a.pow(2) + ctr_being_notsmooth_b.pow(2))
-
-    #score_tensor.zero_()
-
-    self.goal_tensor[0] = goal[0]
-    self.goal_tensor[1] = goal[1]
-    self.goal_tensor[2] = goal[2]
-
-    score_tensor[:] += pose_cost * torch.abs(torch.sum(poses - self.goal_tensor.repeat(K, 1), 1))
-    #score_tensor = torch.abs(score_tensor)
-    # cost += bounds_check * out_of_bounds
+    #ctr_being_notsmooth = torch.sqrt(ctr_being_notsmooth_a.pow(2) + ctr_being_notsmooth_b.pow(2))
+    ctr_being_notsmooth = 0.7 * torch.abs(ctr_being_notsmooth_a) + 0.3 * torch.abs(ctr_being_notsmooth_b)
     score_tensor[:] += noise_cost * ctr_being_notsmooth
 
-    # check if any particle is out of bounds and if so penalize HEAVILY
+    # penalize reversing direction enough to prevent robot spasms
+    x_mult_shit = (prev_ctrl[0] + prev_noise[:, 0]) * (ctrl[0] + noise[:, 0])
+    torch.mul(x_mult_shit, -1, out=x_mult_shit)
+    x_mult_shit.clamp_(0, 1)
+    torch.ceil(x_mult_shit, out=x_mult_shit)
 
-    # for i in range(poses):
-    #   score_tensor[i] += bounds_check * self.permissible_region[poses[i, 1], poses[i, 0]]
+    #score_tensor[:] += reverse_cost * x_mult_shit
+
+    # check if any particle is out of bounds and if so penalize HEAVILY
     score_tensor[:] += bounds_check * self.permissible_region[self.poses_pixels[:, 1], self.poses_pixels[:, 0]]
 
-    # score_tensor[:] += control_cost * math.sqrt(ctrl[0]**2 + ctrl[1]**2)
+    score_tensor[:] += control_cost * math.sqrt(ctrl[0]**2 + ctrl[1]**2)
 
-    # score_tensor[:] += noise_cost * torch.abs(torch.sum(noise, 1))
+    score_tensor[:] += noise_cost * torch.abs(torch.sum(noise, 1))
 
   def mppi(self, init_pose, init_input):
     t0 = time.time()
@@ -190,32 +201,54 @@ class MPPIController:
     # Scale the added noise by the weighting and add to your control sequence
     # Apply the first control values, and shift your control trajectory
 
+    if np.sum(np.abs(init_pose - self.goal)) <= 0.01:
+      return (0,0), self.poses.zero_()
 
     T = self.T
     K = self.K
-    noise = self.sigma
+    vel_noise = self.sigma
+    steer_noise = 0.2 * self.sigma
     controls = self.controls
-    numpy_noise = np.random.normal(0, noise, (K, T, 2))
     e_thingy = self.e_thingy
-    e_thingy[:, :, :] = torch.normal(std=torch.Tensor((([noise] * K) * T) * 2))
+    # velocity noise
+    e_thingy[:, :, 0] = torch.normal(std=torch.Tensor((([vel_noise] * K) * T)))
+    e_thingy[:, :, 1] = torch.normal(std=torch.Tensor((([steer_noise] * K) * T)))
     score_tensor = self.score_tensor.zero_()
     weights = self.weights.zero_()
     poses = self.poses.zero_()
     poses[:, 0, :] = torch.cuda.FloatTensor(init_pose).repeat(K, 1)
+    self.nn_input = init_input.repeat(K, 1)
+
+    #wrap init pose around theta
+    poses[:, 0, 2].add_(math.pi)
+    poses[:, 0, 2].fmod_(2 * math.pi)
+    poses[:, 0, 2].add_(-1 * np.pi)
+
     for t in range(1, T + 1):
-      self.noisy_controls[:, 0] = e_thingy[:, t-1, 0] + controls[t-1,0]
-      self.noisy_controls[:, 1] = e_thingy[:, t-1, 1] + controls[t-1,1]
+      self.noisy_controls[:, 0] = e_thingy[:, t-1, 0] + controls[t-1, 0]
+      self.noisy_controls[:, 1] = e_thingy[:, t-1, 1] + controls[t-1, 1]
       # noisy_controls = (torch.cuda.FloatTensor([] * K) + e_thingy[:, t-1, 0], torch.cuda.FloatTensor([controls[t-1, 1]] * K) + e_thingy[:, t-1, 1])
       if t > 1:
         prior = poses[:, t-2,:]
       elif t == 1:
         prior = poses[:, t-1,:]
 
-      make_input_mppi(self.nn_input, prior, poses[:, t-1,:], self.noisy_controls) 
-      torch.add(self.model(Variable(self.nn_input)).data, value=1, other = poses[:, t-1, :], out = poses[:, t, :])
+      #old version
+      #make_input_mppi(self.nn_input, prior, poses[:, t-1,:], self.noisy_controls) 
+      #torch.add(self.model(Variable(self.nn_input)).data, value=1, other = poses[:, t-1, :], out = poses[:, t, :])
+
+      #new version
+      make_input_mppi(self.nn_input, prior, poses[:, t-1,:], self.noisy_controls)
+      poses[:, t, :] = self.model(Variable(self.nn_input)).data
+      poses[:, t, :] += prior
+
+      #wrap around theta
+      poses[:, t, 2].add_(math.pi)
+      poses[:, t, 2].fmod_(2 * math.pi)
+      poses[:, t, 2].add_(-1 * np.pi)
 
       # TODO: Replace with actual cost function and figure this shit out
-      self.running_cost(poses[:, t, :], self.goal, controls[t - 1, :], e_thingy[:, t - 1, :], score_tensor)
+      self.running_cost(poses[:, t, :], self.goal, controls[t - 1, :], controls[t - 2, :], e_thingy[:, t-1, :], e_thingy[:, t-2, :], score_tensor)
       # for k in range(K):
         #print "t = ", t
         # noisy_controls = (controls[t-1,0] + e_thingy[k, t-1, 0], controls[t-1, 1] + e_thingy[k, t-1, 1])
@@ -233,8 +266,8 @@ class MPPIController:
     #print score_tensor
     beta = torch.min(score_tensor)
     print 'beta,', beta
-    norm = torch.sum(torch.exp((-1 / self._lambda) * (score_tensor - beta)))
-    weights = (1 / norm) * torch.exp((-1 / self._lambda) * (score_tensor - beta))
+    norm = torch.sum(torch.exp((-1.0 / self._lambda) * (score_tensor - beta)))
+    weights = (1.0 / norm) * torch.exp((-1.0 / self._lambda) * (score_tensor - beta))
     #controls[:, 0] += torch.sum(weights * e_thingy[K, :, 0])
     #controls[:, 1] += torch.sum(weights * e_thingy[K, :, 1])
 
@@ -244,8 +277,18 @@ class MPPIController:
     controls[:, 0] += torch.sum(torch.mul(weights_r, e_thingy[:, :, 0]), 0)
     controls[:, 1] += torch.sum(torch.mul(weights_r, e_thingy[:, :, 1]), 0)
 
+
+    #clamp controls - MAY NOT BE A GOOD IDEA I'M JUST TRYING STUFF
+    # nah it's a good idea i did this last night before the robot nuked my code
+    # just changed to clamp_ so it does it inplace
+    #controls[:,0].clamp_(-3, 3)
+    #controls[:,1].clamp_(-0.5, 0.5)
+
+    # print self.controls
+
+    # re add this when we actually run it
     run_ctrl = (controls[0, 0], controls[0, 1])
-    controls[:-1, :] = controls[1:, :]
+    # controls[:-1, :] = controls[1:, :]
     # controls[-1, 0] = 0
     # controls[-1, 1] = 0
 
@@ -290,9 +333,9 @@ class MPPIController:
     timenow = msg.header.stamp.to_sec()
     dt = timenow - self.lasttime
     self.lasttime = timenow
-    nn_input = np.array([pose_dot[0], pose_dot[1], pose_dot[2],
+    nn_input = torch.cuda.FloatTensor(np.array([pose_dot[0], pose_dot[1], pose_dot[2],
                          np.sin(theta),
-                         np.cos(theta), 0.0, 0.0, 0.1])
+                         np.cos(theta), 0.0, 0.0, 0.1]))
 
     run_ctrl, poses = self.mppi(curr_pose, nn_input)
 
@@ -339,7 +382,7 @@ def test_MPPI(mp, N, goal=np.array([0.,0.,0.])):
      
 if __name__ == '__main__':
 
-  T = 30
+  T = 50
   K = 500
   sigma = 1 # These values will need to be tuned
   _lambda = 0.2
