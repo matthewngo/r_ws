@@ -1,10 +1,13 @@
 1. Final hyperparameters
-TBD
+T: 75
+K: 1000
+Sigma: 1.5
+Lambda: 0.85
 
 2. Timing
-Final time: TBD
+Final time: ~300-500ms
 We used the GPU.
 For charts, see "K500.png" and "T20.png" respectively. The varied-T chart saw large improvements with low T values, while the varied-K chart bounced around, mostly due to noise we think.
 
 3. Behaviors
-Not really? TBD
+One interesting behavior about our MPPI controller was favoring backwards behavior in some specific scenarios. Our robot was able to execute turns and directions very well when given a goal that was north of it on the map visualization. We could make our controller better by ensuring that the robot moves in the direction that would correctly lead it to the goal in a more direct fashion and find a way to optimize goals south of our robot on the map visualization.
