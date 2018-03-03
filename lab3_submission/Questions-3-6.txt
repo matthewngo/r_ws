@@ -1,0 +1,10 @@
+1. Final hyperparameters
+TBD
+
+2. Timing
+Final time: TBD
+We used the GPU.
+For charts, see "K500.png" and "T20.png" respectively. The varied-T chart saw large improvements with low T values, while the varied-K chart bounced around, mostly due to noise we think.
+
+3. Behaviors
+Not really? TBD

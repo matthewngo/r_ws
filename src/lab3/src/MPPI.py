@@ -147,9 +147,7 @@ class MPPIController:
     # behavior
     pose_cost = 1000
     bounds_check = 999999999
-    control_cost = 0
-    noise_cost = 0
-    reverse_cost = 10
+    not_smooth_cost = 100
 
     # transform poses to pixels for bounds checking
     self.poses_pixels[:, 0] = (poses[:,0] - self.map_x) / 0.02
@@ -161,7 +159,8 @@ class MPPIController:
     self.goal_tensor[1] = goal[1]
     score_tensor[:] += pose_cost * torch.sqrt(torch.sum(torch.pow(poses[:, :2] - self.goal_tensor[:2].repeat(K, 1), 2), 1))
 
-    #score_tensor[:] += 0.1 * pose_cost * torch.pow(poses[:, 2] - self.goal_tensor[2], 2)
+    # angle penalty
+    score_tensor[:] += pose_cost * torch.add(torch.fmod(torch.add(torch.abs(poses[:, 2] - self.goal_tensor[2]), math.pi), 2 * math.pi), -1 * math.pi)
 
     # apply penalty for non-smooth controls
 
@@ -169,22 +168,22 @@ class MPPIController:
     ctr_being_notsmooth_b = self._lambda * ctrl[1] * (1.0 / self.sigma) * noise[:, 1]
     #ctr_being_notsmooth = torch.sqrt(ctr_being_notsmooth_a.pow(2) + ctr_being_notsmooth_b.pow(2))
     ctr_being_notsmooth = 0.7 * torch.abs(ctr_being_notsmooth_a) + 0.3 * torch.abs(ctr_being_notsmooth_b)
-    score_tensor[:] += noise_cost * ctr_being_notsmooth
+    score_tensor[:] += not_smooth_cost * ctr_being_notsmooth
 
     # penalize reversing direction enough to prevent robot spasms
-    x_mult_shit = (prev_ctrl[0] + prev_noise[:, 0]) * (ctrl[0] + noise[:, 0])
-    torch.mul(x_mult_shit, -1, out=x_mult_shit)
-    x_mult_shit.clamp_(0, 1)
-    torch.ceil(x_mult_shit, out=x_mult_shit)
+    # x_mult_shit = (prev_ctrl[0] + prev_noise[:, 0]) * (ctrl[0] + noise[:, 0])
+    # torch.mul(x_mult_shit, -1, out=x_mult_shit)
+    # x_mult_shit.clamp_(0, 1)
+    # torch.ceil(x_mult_shit, out=x_mult_shit)
 
     #score_tensor[:] += reverse_cost * x_mult_shit
 
     # check if any particle is out of bounds and if so penalize HEAVILY
     score_tensor[:] += bounds_check * self.permissible_region[self.poses_pixels[:, 1], self.poses_pixels[:, 0]]
 
-    score_tensor[:] += control_cost * math.sqrt(ctrl[0]**2 + ctrl[1]**2)
+    # score_tensor[:] += control_cost * math.sqrt(ctrl[0]**2 + ctrl[1]**2)
 
-    score_tensor[:] += noise_cost * torch.abs(torch.sum(noise, 1))
+    # score_tensor[:] += noise_cost * torch.abs(torch.sum(noise, 1))
 
   def mppi(self, init_pose, init_input):
     t0 = time.time()
@@ -281,16 +280,16 @@ class MPPIController:
     #clamp controls - MAY NOT BE A GOOD IDEA I'M JUST TRYING STUFF
     # nah it's a good idea i did this last night before the robot nuked my code
     # just changed to clamp_ so it does it inplace
-    #controls[:,0].clamp_(-3, 3)
-    #controls[:,1].clamp_(-0.5, 0.5)
+    controls[:,0].clamp_(-3, 3)
+    controls[:,1].clamp_(-0.5, 0.5)
 
     # print self.controls
 
     # re add this when we actually run it
     run_ctrl = (controls[0, 0], controls[0, 1])
-    # controls[:-1, :] = controls[1:, :]
-    # controls[-1, 0] = 0
-    # controls[-1, 1] = 0
+    controls[:-1, :] = controls[1:, :]
+    controls[-1, 0] = 0
+    controls[-1, 1] = 0
 
 
     # Notes:
@@ -382,10 +381,10 @@ def test_MPPI(mp, N, goal=np.array([0.,0.,0.])):
      
 if __name__ == '__main__':
 
-  T = 50
-  K = 500
+  T = 25 
+  K = 1000
   sigma = 1 # These values will need to be tuned
-  _lambda = 0.2
+  _lambda = 0.7
 
   # run with ROS
   rospy.init_node("mppi_control", anonymous=True) # Initialize the node
@@ -395,4 +394,5 @@ if __name__ == '__main__':
   # test & DEBUG
   #mp = MPPIController(T, K, sigma, _lambda)
   #test_MPPI(mp, 50, np.array([10.,0.,0.]))
+
 
