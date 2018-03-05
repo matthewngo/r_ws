@@ -160,7 +160,7 @@ class MPPIController:
     score_tensor[:] += pose_cost * torch.sqrt(torch.sum(torch.pow(poses[:, :2] - self.goal_tensor[:2].repeat(K, 1), 2), 1))
 
     # angle penalty
-    #score_tensor[:] += pose_cost * torch.add(torch.fmod(torch.add(torch.abs(poses[:, 2] - self.goal_tensor[2]), math.pi), 2 * math.pi), -1 * math.pi)
+    score_tensor[:] += 0.5 * pose_cost * torch.abs(torch.add(torch.fmod(torch.add(torch.abs(poses[:, 2] - self.goal_tensor[2]), math.pi), 2 * math.pi), -1 * math.pi))
 
     # apply penalty for non-smooth controls
 
@@ -332,6 +332,7 @@ class MPPIController:
     timenow = msg.header.stamp.to_sec()
     dt = timenow - self.lasttime
     self.lasttime = timenow
+    # TODO: fix this shit
     nn_input = torch.cuda.FloatTensor(np.array([pose_dot[0], pose_dot[1], pose_dot[2],
                          np.sin(theta),
                          np.cos(theta), 0.0, 0.0, 0.1]))
