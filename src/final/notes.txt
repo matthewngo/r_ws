@@ -1,0 +1,29 @@
+To do:
+
+Section tomorrow - get info on when we get map and points (enough time to do pre-computing that doesn't eat into our run time?) (same time or different times?)
+
+Make sure search works for long distances
+Greedy space filling
+Outlier removal
+
+Actually implement the control scheme
+Make sure it runs fast enough (10hz = particle filter)
+
+
+Control scheme: five main modes of decision-making
+
+See a red: do line following but add an additional bias to turn away from the red, and turn harder the closer it is to you. might turn around entirely if it gets too close.
+
+See a blue: completely ignore line following and go straight for the blue
+ - may have to do some sort of "ignore a blue X you've already been on", might not matter though
+
+About to go into a not allowed zone: do line following but do -speed and -angle (backing up and turning around)
+
+Angle error in line following outside of -pi/2 to pi/2 (car is going backwards): slow down and turn hard to bring it into the -pi/2 to pi/2 range
+
+Line following: PID (or just PD) controller, based off of angle and distance error from car's position (particle filter)
+Keeps track of the line segment in the path that the car is closest to (path only considers path between last and next blue point? path can't go backwards? need to account for the fact that the path can double back on itself)
+ - Angle error is very easy to calculate (car's angle - angle of current line segment)
+ - Distance error https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line can also precompute and store some of this, but it's probably not that intensive
+ 
+ 
