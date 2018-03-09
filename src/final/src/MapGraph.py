@@ -189,6 +189,8 @@ class MapGraph:
 
 		path = self.search(start, finish)
 		print path
+		for node in path:
+			print self.nodes[node].pos
 		for i in range(len(path)-1):
 			n1 = self.nodes[path[i]]
 			n2 = self.nodes[path[i+1]]
@@ -199,6 +201,9 @@ class MapGraph:
 			px = Utils.pixels_between(n1.pos, n2.pos)
 			for p in px:
 				self.processed_map_img.putpixel(p, (255,0,0))
+
+		self.processed_map_img.putpixel(start.pos, (0,255,0))
+		self.processed_map_img.putpixel(finish.pos, (0,255,0))
 
 		self.processed_map_img.show()
 
@@ -217,47 +222,21 @@ class MapGraph:
 			self.nodes[oth].remove_edge(node)
 
 	def search(self, start, finish):
-		# Dijkstra, our old friend
-		dist = {}
-		dist[start.id] = 0
-		prev = {}
-		prev[start.id] = None
-		unvisited = Utils.PriorityQueue()
-		visited = {}
-		visited[start.id] = True
-
-		for nid, n in self.nodes.iteritems():
-			if nid != start.id:
-				dist[nid] = 99999999
-				prev[nid] = None
-				visited[nid] = False
-
-			#unvisited.push(nid, dist[nid])
-		unvisited.push(start.id, 0)
-
-		while not unvisited.isEmpty():
-			curr = unvisited.pop()
-			visited[curr] = True
-			# print curr
-			if curr == finish.id:
-				break
-			else:
-				for id2 in self.nodes[curr].edges:
-					# print id2
-					if visited[id2] == True:
-						continue
-					alt = dist[curr] + self.nodes[curr].edges[id2]
-					if alt < dist[id2]:
-						dist[id2] = alt
-						prev[id2] = curr
-						unvisited.push(id2, alt)
-
-		ret = []
-		c = finish.id
-		while prev[c] != None:
-			ret.append(c)
-			c = prev[c]
-		return ret
+		closed = set()
+		fringe = Utils.PriorityQueue()
+		fringe.push((start.id, [start.id], 0), 0 + Utils.mHeuristic(start.pos, finish.pos))
+		while True:
+			if fringe.isEmpty():
+				return []
+			node, path, back_cost = fringe.pop()
+			print node, finish.id
+			if node == finish.id:
+				print path
+				return path
+			if node not in closed:
+				closed.add(node)
+				for child_id, child_cost in self.nodes[node].edges.iteritems():
+					fringe.push((child_id, path + [child_id], back_cost + child_cost), back_cost + Utils.mHeuristic(self.nodes[child_id].pos, finish.pos))
 
 
 
@@ -317,9 +296,5 @@ g.connectify([b0, b1])
 #  	print g.nodes[n].pos
 
 # g.draw()
-
-print g.search(g.nodes[0], g.nodes[100])
-print g.search(g.nodes[2], g.nodes[150])
-print g.search(g.nodes[6], g.nodes[129])
 
 g.draw_path(g.nodes[2], g.nodes[150])

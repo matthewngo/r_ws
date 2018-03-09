@@ -84,6 +84,11 @@ class PriorityQueue:
     def isEmpty(self):
         return len(self.heap) == 0
 
+def mHeuristic(xy1, xy2):
+    # return 0
+    return abs(xy1[0] - xy2[0] ) + abs( xy1[1] - xy2[1] )
+
+
 class PriorityQueueWithFunction(PriorityQueue):
     """
     Implements a priority queue with the same push/pop signature of the

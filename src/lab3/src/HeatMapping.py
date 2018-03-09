@@ -64,17 +64,23 @@ def main():
 
     score_tensor = torch.FloatTensor(particles.shape[0]).zero_()
 
-    small_boy = score_tensor.min()
-
     # evaluate cost function on pose and goal
     running_cost(particles_meters, GOAL, score_tensor)
-       
+
+    small_boy = score_tensor.min()
+    big_boy = score_tensor.max()
+    vals = []
     # display cost map
     for i in range(particles.shape[0]):
-        val = int(255 * (math.log(score_tensor[i]) + (1-math.log(small_boy))) / (1-math.log(small_boy)))
-        map_img.putpixel((int(particles[i, 0]), int(particles[i, 1])), min(val, 0))
+        val = 255.0 * (score_tensor[i] - small_boy) / (big_boy - small_boy)
+        vals.append(val)
+        # val = int(255 * (math.log(score_tensor[i]) + (1-math.log(small_boy))) / (1-math.log(small_boy)))
+        # print val
+        map_img.putpixel((int(particles[i, 0]), int(particles[i, 1])), int(val))
     
     map_img.save('out.png')
+    print min(vals), max(vals)
+    print vals
 
 def running_cost(poses, goal, score_tensor):
     # TODO
