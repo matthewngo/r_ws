@@ -3,6 +3,7 @@ import math
 import numpy as np
 import rospy
 from nav_msgs.srv import GetMap
+import itertools
 
 import Utils
 
@@ -14,6 +15,7 @@ CAR_WIDTH = 0.3 #m
 CAR_LENGTH = 0.5 #m
 PIXELS_TO_METERS = 0.02
 MAP_CENTER_OFFSET = None
+BLUE_NODE_NAMES = ["B0", "B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9"]
 
 
 """ 
@@ -32,12 +34,12 @@ def dist(p1, p2):
 """ 
 HYPERPARAMETERS
 """
-FILTER_RADIUS = 2 #px
+FILTER_RADIUS = 5 #px
 FILTER_DENS = 5 #px
-BUFFER_RADIUS_M = (0.6 * CAR_LENGTH) #m
+BUFFER_RADIUS_M = (0.7 * CAR_LENGTH) #m
 BUFFER_RADIUS_PX = px(BUFFER_RADIUS_M) #px
-INITIAL_NODE_COVERAGE = 0.0005
-RED_RADIUS_M = 0.2 + BUFFER_RADIUS_M #m
+INITIAL_NODE_COVERAGE = 0.00075    # TODO: increase this to make better paths
+RED_RADIUS_M = 0.25 + BUFFER_RADIUS_M #m
 RED_RADIUS_PX = px(RED_RADIUS_M) #px
 
 DEBUG_USE_IMAGES = True
@@ -60,9 +62,6 @@ class MapGraph:
 			for j in range(self.w):
 				self.original_map_img.putpixel((i,j), self.original_map_mat[i, j])
 
-		# for x in range(self.h):
-		#     print self.original_map_mat[x,x]
-
 		# matrix has 2 values: 1 (allowed), 0 (not allowed)
 		self.processed_map_mat = np.ones(self.dim, dtype=np.int32)
 		self.processed_map_img = Image.new('L', self.dim)
@@ -74,20 +73,31 @@ class MapGraph:
 
 		print "initialized"
 
-	def process_map(self):
+	#red_pixels is a list of (x,y) tuples for no-go locations
+	def process_map(self, red_pixels):
 		ignore = []
-		# for i in range(self.h):
-		# 	for j in range(self.w):
-		# 		ct = 0
-		# 		for i2 in range(-FILTER_RADIUS, FILTER_RADIUS+1):
-		# 			for j2 in range(-FILTER_RADIUS, FILTER_RADIUS+1):
-		# 				if not self.inbounds(i+i2, j+j2):
-		# 					continue
-		# 				if self.original_map_mat[i+i2, j+j2] == 255: #?
-		# 					ct += 1
-		# 		if ct < FILTER_DENS:
-		# 			ignore.append((i, j))
-		# print "outliers found: " + str(len(ignore))
+		for i in range(self.h):
+			for j in range(self.w):
+				if (i % 400 == 0) and (j == 0):
+					print "  " + str(i * 100.0 / self.h) + "%"
+				ct = 0
+				if self.original_map_mat[i, j] != 100:
+					continue
+
+				for i2 in range(-FILTER_RADIUS, FILTER_RADIUS+1):
+					if ct >= FILTER_DENS:
+						break
+					for j2 in range(-FILTER_RADIUS, FILTER_RADIUS+1):
+						if ct >= FILTER_DENS:
+							break
+						if not self.inbounds(i+i2, j+j2):
+							continue
+						if self.original_map_mat[i+i2, j+j2] == 100:
+							ct += 1
+
+				if ct < FILTER_DENS:
+					ignore.append((i, j))
+		print "outliers found: " + str(len(ignore))
 
 		for i in range(self.h):
 			for j in range(self.w):
@@ -105,6 +115,15 @@ class MapGraph:
 				elif self.original_map_mat[i, j] == -1:
 					self.processed_map_mat[i, j] = 0
 		print "boundaries processed"
+
+		for rx,ry in red_pixels:
+			for i2 in range(-BUFFER_RADIUS_PX, BUFFER_RADIUS_PX+1):
+				for j2 in range(-BUFFER_RADIUS_PX, BUFFER_RADIUS_PX+1):
+					if not self.inbounds(rx+i2, ry+j2):
+						continue
+					if dist((rx,ry), (rx+i2,ry+j2)) <= BUFFER_RADIUS_PX:
+						self.processed_map_mat[rx+i2, ry+j2] = 0
+		print "red points processed"
 
 		for i in range(self.h):
 			for j in range(self.w):
@@ -238,22 +257,65 @@ class MapGraph:
 				for child_id, child_cost in self.nodes[node].edges.iteritems():
 					fringe.push((child_id, path + [child_id], back_cost + child_cost), back_cost + Utils.mHeuristic(self.nodes[child_id].pos, finish.pos))
 
+	# blue_pixels is a list of (x,y) tuples for goal locations
+	def add_blue(self, blue_pixels):
+		bnodes = []
+		BLUE_NODE_NAMES = BLUE_NODE_NAMES[:len(blue_pixels)]
+		for i in len(blue_pixels):
+			b = Node(blue_pixels[i], BLUE_NODE_NAMES[i])
+			bnodes.append(b)
+			self.add(b)
+		self.connectify(bnodes)
+		print "added blue nodes!"
+
+	# MUST add blue nodes first!
+	# start is an (x,y) tuple
+	def find_path(self, start):
+		s = Node(start, "START")
+		self.add(s)
+		self.connectify(s)
+
+		size = len(BLUE_NODE_NAMES)+1
+		costs = np.zeros((size, size))
+		paths = [[None]*size for _ in range(size)]
+
+		for i in len(size-1):
+			p = self.search(self.named_nodes["START"], self.named_nodes[BLUE_NODE_NAMES[i]])
+			costs[0,i+1] = cost_of(p)
+			paths[0,i+1] = p
+			costs[i+1,0] = cost_of(p)
+			paths[i+1,0] = p
+
+		for i1 in len(size-1):
+			for i2 in len(size-1):
+				p = self.search(self.named_nodes[BLUE_NODE_NAMES[i1]], self.named_nodes[BLUE_NODE_NAMES[i2]])
+				costs[i1+1,i2+1] = cost_of(p)
+				paths[i1+1,i2+1] = p
+				costs[i2+1,i1+1] = cost_of(p)
+				paths[i2+1,i1+1] = p
+
+		lowest_cost = 99999999
+		lowest_cost_path = None
+		idx = range(1, size)
+		for path in itertools.permutations(idx):
+			cost = costs[0,path[0]]
+			for i in len(path)-1:
+				cost += costs[path[i],path[i+1]]
+			if cost < lowest_cost:
+				lowest_cost = cost
+				lowest_cost_path = path
+
+		return lowest_cost_path
+
+	# TODO: make function to get cost of path lmao
+
+	# TODO: make function to greedily add nodes where there are none nearby (within ~25px)
+
 
 
 """        
-	def add_blue_and_red(self, filename):
-		expand the not allowed areas by red_radius around red points
-		remove any nodes within that radius
-		check all nodes for connectedness under new allowed area
-
-		add blue nodes, named B0, B1, B2...
-		for each blue node, connect to all applicable nodes
-
 	def write_to_file(self, filename):
-		write map and graph to file
-
-	def read_from_file(self, filename):
-		read map and graph from file
+		write path to file
 
 """
 
@@ -275,13 +337,13 @@ class Node:
 
 
 g = MapGraph()
-g.process_map()
+g.process_map([])
 g.init_nodes()
 g.connectify()
 #g.draw()
 
-b0 = Node((775,775), "B0")
-b1 = Node((1000,1000), "B1")
+b0 = Node((600,600), "B0")
+b1 = Node((2350,2350), "B1")
 g.add(b0)
 g.add(b1)
 g.connectify([b0, b1])
@@ -297,4 +359,4 @@ g.connectify([b0, b1])
 
 # g.draw()
 
-g.draw_path(g.nodes[2], g.nodes[150])
+g.draw_path(b0, b1)

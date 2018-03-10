@@ -1,13 +1,13 @@
 To do:
 
-Section tomorrow - get info on when we get map and points (enough time to do pre-computing that doesn't eat into our run time?) (same time or different times?)
-
-Make sure search works for long distances
-Greedy space filling
-Outlier removal
+Greedy space filling? Increase coverage?
 
 Actually implement the control scheme
 Make sure it runs fast enough (10hz = particle filter)
+
+Test path search
+Tune particle filter
+Make sure it gives reasonable results for the overall path choices
 
 
 Control scheme: five main modes of decision-making
