@@ -1,18 +1,18 @@
 To do:
 
-Greedy space filling? Increase coverage?
-
 Actually implement the control scheme
 Make sure it runs fast enough (10hz = particle filter)
 
 Test path search
-Tune particle filter
+>>>>Tune particle filter!!!
 Make sure it gives reasonable results for the overall path choices
+
+
 
 
 Control scheme: five main modes of decision-making
 
-See a red: do line following but add an additional bias to turn away from the red, and turn harder the closer it is to you. might turn around entirely if it gets too close.
+See a red: do line following but add an additional bias to turn away from the red, and turn harder the closer it is to you. might back up/turn around entirely if it gets too close.
 
 See a blue: completely ignore line following and go straight for the blue
  - may have to do some sort of "ignore a blue X you've already been on", might not matter though
@@ -27,3 +27,9 @@ Keeps track of the line segment in the path that the car is closest to (path onl
  - Distance error https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line can also precompute and store some of this, but it's probably not that intensive
  
  
+
+
+
+[(1,1),(10,10),(25,25)]
+[(25,25),(50,50)]
+

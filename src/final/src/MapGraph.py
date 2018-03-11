@@ -38,9 +38,10 @@ FILTER_RADIUS = 5 #px
 FILTER_DENS = 5 #px
 BUFFER_RADIUS_M = (0.7 * CAR_LENGTH) #m
 BUFFER_RADIUS_PX = px(BUFFER_RADIUS_M) #px
-INITIAL_NODE_COVERAGE = 0.00075    # TODO: increase this to make better paths
+INITIAL_NODE_COVERAGE = 0.0008
 RED_RADIUS_M = 0.25 + BUFFER_RADIUS_M #m
 RED_RADIUS_PX = px(RED_RADIUS_M) #px
+INFILL_RADIUS = 25 #px
 
 DEBUG_USE_IMAGES = True
 
@@ -68,6 +69,8 @@ class MapGraph:
 
 		self.nodes = {}
 		self.named_nodes = {}
+
+		self.plan = []
 
 		# self.original_map_img.show()
 
@@ -197,6 +200,19 @@ class MapGraph:
 					if self.processed_map_img.getpixel(p) != 255:
 						self.processed_map_img.putpixel(p, 175)
 
+		self.processed_map_img = self.processed_map_img.convert('RGB')
+		self.processed_map_img.putpixel((1379,2429),(0,0,255))
+		self.processed_map_img.putpixel((1514,2246),(0,0,255))
+		self.processed_map_img.putpixel((1105,1902),(0,0,255))
+		self.processed_map_img.putpixel((1713,1500),(0,0,255))
+		self.processed_map_img.putpixel((2165,1072),(0,0,255))
+		self.processed_map_img.putpixel((1309,2053),(255,0,0))
+		self.processed_map_img.putpixel((1415,2113),(255,0,0))
+		self.processed_map_img.putpixel((1371,2161),(255,0,0))
+		self.processed_map_img.putpixel((1831,1522),(255,0,0))
+		self.processed_map_img.putpixel((1785,1402),(255,0,0))
+		self.processed_map_img.putpixel((2500,620),(0,255,0))
+
 		if show:
 			self.processed_map_img.show()
 
@@ -207,9 +223,9 @@ class MapGraph:
 		self.processed_map_img = self.processed_map_img.convert('RGB')
 
 		path = self.search(start, finish)
-		print path
-		for node in path:
-			print self.nodes[node].pos
+		# print path
+		# for node in path:
+		# 	print self.nodes[node].pos
 		for i in range(len(path)-1):
 			n1 = self.nodes[path[i]]
 			n2 = self.nodes[path[i+1]]
@@ -248,9 +264,9 @@ class MapGraph:
 			if fringe.isEmpty():
 				return []
 			node, path, back_cost = fringe.pop()
-			print node, finish.id
+			#print node, finish.id
 			if node == finish.id:
-				print path
+				#print path
 				return path
 			if node not in closed:
 				closed.add(node)
@@ -260,8 +276,9 @@ class MapGraph:
 	# blue_pixels is a list of (x,y) tuples for goal locations
 	def add_blue(self, blue_pixels):
 		bnodes = []
+		global BLUE_NODE_NAMES
 		BLUE_NODE_NAMES = BLUE_NODE_NAMES[:len(blue_pixels)]
-		for i in len(blue_pixels):
+		for i in range(len(blue_pixels)):
 			b = Node(blue_pixels[i], BLUE_NODE_NAMES[i])
 			bnodes.append(b)
 			self.add(b)
@@ -273,51 +290,93 @@ class MapGraph:
 	def find_path(self, start):
 		s = Node(start, "START")
 		self.add(s)
-		self.connectify(s)
+		self.connectify([s])
 
 		size = len(BLUE_NODE_NAMES)+1
 		costs = np.zeros((size, size))
 		paths = [[None]*size for _ in range(size)]
 
-		for i in len(size-1):
+		for i in range(size-1):
 			p = self.search(self.named_nodes["START"], self.named_nodes[BLUE_NODE_NAMES[i]])
-			costs[0,i+1] = cost_of(p)
-			paths[0,i+1] = p
-			costs[i+1,0] = cost_of(p)
-			paths[i+1,0] = p
+			costs[0,i+1] = self.cost_of_path(p)
+			paths[0][i+1] = p
+			costs[i+1,0] = self.cost_of_path(p)
+			paths[i+1][0] = p
 
-		for i1 in len(size-1):
-			for i2 in len(size-1):
+		for i1 in range(size-1):
+			for i2 in range(size-1):
 				p = self.search(self.named_nodes[BLUE_NODE_NAMES[i1]], self.named_nodes[BLUE_NODE_NAMES[i2]])
-				costs[i1+1,i2+1] = cost_of(p)
-				paths[i1+1,i2+1] = p
-				costs[i2+1,i1+1] = cost_of(p)
-				paths[i2+1,i1+1] = p
+				costs[i1+1,i2+1] = self.cost_of_path(p)
+				paths[i1+1][i2+1] = p
+				costs[i2+1,i1+1] = self.cost_of_path(p)
+				paths[i2+1][i1+1] = p
 
 		lowest_cost = 99999999
 		lowest_cost_path = None
 		idx = range(1, size)
 		for path in itertools.permutations(idx):
 			cost = costs[0,path[0]]
-			for i in len(path)-1:
+			for i in range(len(path)-1):
 				cost += costs[path[i],path[i+1]]
 			if cost < lowest_cost:
 				lowest_cost = cost
 				lowest_cost_path = path
 
-		return lowest_cost_path
+		self.plan.append(paths[0][lowest_cost_path[0]])
+		for i in range(len(lowest_cost_path)-1):
+			self.plan.append(paths[lowest_cost_path[i]][lowest_cost_path[i+1]])
+		print self.plan
 
 	# TODO: make function to get cost of path lmao
 
-	# TODO: make function to greedily add nodes where there are none nearby (within ~25px)
+	def infill(self):
+		print "infilling"
+		newnodes = []
+		for i in range(self.h):
+			for j in range(self.w):
+				if (i % 200 == 0) and (j == 0):
+					print "  " + str(i * 100.0 / self.h) + "%"
+				if self.processed_map_mat[i,j] == 0:
+					continue
 
+				nearest = None
+				neardist = INFILL_RADIUS
+				for nid, n in self.nodes.iteritems():
+					d = dist((i,j), n.pos)
+					if (d <= neardist) and (self.connected((i,j), n.pos)):
+						nearest = n
+						neardist = d
+				if nearest == None:
+					newnode = Node((i,j))
+					self.add(newnode)
+					newnodes.append(newnode)
+		print "infill done"
+		self.connectify(newnodes)
 
-
-"""        
+	# Writes the plan found to the specified filename
+	# Each line is a separate leg of the path (i.e. from start to a blue node or from one blue node to the next)
+	# Each line is written as a list of (x,y) coordinates in map-space
 	def write_to_file(self, filename):
-		write path to file
+		f = open(filename, 'w')
+		for n in self.plan:
+			f.write(self.path_to_string(n) + "\n")
+		f.close()
 
-"""
+	# where the path is a list of node IDs, i.e. as outputted by search()
+	def cost_of_path(self, path):
+		cost = 0
+		for i in range(len(path)-1):
+			cost += self.nodes[path[i]].edges[path[i+1]]
+		return cost
+
+	# where the path is a list of node IDs, i.e. as outputted by search()
+	def path_to_string(self, path):
+		ret = []
+		for n in path:
+			ret.append(self.nodes[n].pos)
+		return str(ret)
+
+
 
 class Node:
 	counter = 0
@@ -337,26 +396,28 @@ class Node:
 
 
 g = MapGraph()
-g.process_map([])
+g.process_map([(800,820)])
 g.init_nodes()
 g.connectify()
 #g.draw()
 
-b0 = Node((600,600), "B0")
-b1 = Node((2350,2350), "B1")
-g.add(b0)
-g.add(b1)
-g.connectify([b0, b1])
-
-# path = g.search(b0, b1)
-# for n in path:
-# 	print g.nodes[n].pos
-
-# path = g.search(g.nodes[0], g.nodes[230])
-# print path
-# for n in path:
-#  	print g.nodes[n].pos
+# b0 = Node((600,600), "B0")
+# b1 = Node((2350,2350), "B1")
+# g.add(b0)
+# g.add(b1)
+# g.connectify([b0, b1])
 
 # g.draw()
 
-g.draw_path(b0, b1)
+# g.infill()
+
+# g.draw_path(b0, b1)
+
+# print g.search(b0,b1)
+
+g.draw()
+
+# g.add_blue([(2350,2350),(1700,2240)])
+# g.find_path((600,600))
+
+# g.write_to_file("out.txt")
