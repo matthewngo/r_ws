@@ -4,8 +4,9 @@ import numpy as np
 import rospy
 from nav_msgs.srv import GetMap
 import itertools
-
 import Utils
+import sys
+import csv
 
 
 """ 
@@ -38,10 +39,10 @@ FILTER_RADIUS = 5 #px
 FILTER_DENS = 5 #px
 BUFFER_RADIUS_M = (0.7 * CAR_LENGTH) #m
 BUFFER_RADIUS_PX = px(BUFFER_RADIUS_M) #px
-INITIAL_NODE_COVERAGE = 0.0008
-RED_RADIUS_M = 0.25 + BUFFER_RADIUS_M #m
+INITIAL_NODE_COVERAGE = 0.0015
+RED_RADIUS_M = 0.3 + BUFFER_RADIUS_M #m
 RED_RADIUS_PX = px(RED_RADIUS_M) #px
-INFILL_RADIUS = 25 #px
+INFILL_RADIUS = 50 #px
 
 DEBUG_USE_IMAGES = True
 
@@ -58,14 +59,14 @@ class MapGraph:
 
 		# matrix has 3 values: -1 (unknown), 0 (empty), 100 (filled)
 		self.original_map_mat = np.reshape(self.map_msg.data, self.dim)
-		self.original_map_img = Image.new('L', self.dim)
-		for i in range(self.h):
-			for j in range(self.w):
-				self.original_map_img.putpixel((i,j), self.original_map_mat[i, j])
+		# self.original_map_img = Image.new('L', self.dim)
+		# for i in range(self.h):
+		# 	for j in range(self.w):
+		# 		self.original_map_img.putpixel((i,j), self.original_map_mat[i, j])
 
 		# matrix has 2 values: 1 (allowed), 0 (not allowed)
 		self.processed_map_mat = np.ones(self.dim, dtype=np.int32)
-		self.processed_map_img = Image.new('L', self.dim)
+		self.processed_map_img = Image.new('L', (self.dim[1],self.dim[0]))
 
 		self.nodes = {}
 		self.named_nodes = {}
@@ -74,7 +75,7 @@ class MapGraph:
 
 		# self.original_map_img.show()
 
-		print "initialized"
+		print "initialized " + str(self.dim)
 
 	#red_pixels is a list of (x,y) tuples for no-go locations
 	def process_map(self, red_pixels):
@@ -119,20 +120,22 @@ class MapGraph:
 					self.processed_map_mat[i, j] = 0
 		print "boundaries processed"
 
-		for rx,ry in red_pixels:
+		for rx1,ry1 in red_pixels:
+			rx,ry = self.reverse_imgpx((rx1,ry1))
 			for i2 in range(-BUFFER_RADIUS_PX, BUFFER_RADIUS_PX+1):
 				for j2 in range(-BUFFER_RADIUS_PX, BUFFER_RADIUS_PX+1):
 					if not self.inbounds(rx+i2, ry+j2):
 						continue
 					if dist((rx,ry), (rx+i2,ry+j2)) <= BUFFER_RADIUS_PX:
 						self.processed_map_mat[rx+i2, ry+j2] = 0
-		print "red points processed"
+		print "red points processed: " + str(len(red_pixels))
 
 		for i in range(self.h):
 			for j in range(self.w):
 				if (i % 200 == 0) and (j == 0):
 					print "  " + str(i * 100.0 / self.h) + "%"
-				self.processed_map_img.putpixel((i,j), self.processed_map_mat[i,j]*50 + 50 - self.original_map_mat[i,j])
+				self.setpx((i,j), self.processed_map_mat[i,j]*50 + 50 - self.original_map_mat[i,j])
+				# self.processed_map_img.putpixel((i,j), self.processed_map_mat[i,j]*50 + 50 - self.original_map_mat[i,j])
 		# self.processed_map_img.show()
 
 		print "processed map image done"
@@ -181,9 +184,17 @@ class MapGraph:
 						continue
 					if self.connected(n1.pos, n2.pos):
 						n1.add_edge(n2)
-						n2.add_edge(n1)
-						
+						n2.add_edge(n1)		
 		print "connectified"
+
+	def imgpx(self, pos):
+		return (pos[1], self.h-pos[0]-1)
+
+	def reverse_imgpx(self, pos):
+		return self.imgpx(self.imgpx(self.imgpx(pos)))
+
+	def setpx(self, pos, val):
+		self.processed_map_img.putpixel(self.imgpx(pos), val)
 
 	# Only call this once
 	def draw(self, show=True):
@@ -192,26 +203,16 @@ class MapGraph:
 				if id1 <= id2:
 					continue
 				n2 = self.nodes[id2]
-				self.processed_map_img.putpixel(n1.pos, 255)
-				self.processed_map_img.putpixel(n2.pos, 255)
+				self.setpx(n1.pos, 255)
+				self.setpx(n2.pos, 255)
+				# self.processed_map_img.putpixel(n1.pos, 255)
+				# self.processed_map_img.putpixel(n2.pos, 255)
 
 				px = Utils.pixels_between(n1.pos, n2.pos)
 				for p in px:
-					if self.processed_map_img.getpixel(p) != 255:
-						self.processed_map_img.putpixel(p, 175)
-
-		self.processed_map_img = self.processed_map_img.convert('RGB')
-		self.processed_map_img.putpixel((1379,2429),(0,0,255))
-		self.processed_map_img.putpixel((1514,2246),(0,0,255))
-		self.processed_map_img.putpixel((1105,1902),(0,0,255))
-		self.processed_map_img.putpixel((1713,1500),(0,0,255))
-		self.processed_map_img.putpixel((2165,1072),(0,0,255))
-		self.processed_map_img.putpixel((1309,2053),(255,0,0))
-		self.processed_map_img.putpixel((1415,2113),(255,0,0))
-		self.processed_map_img.putpixel((1371,2161),(255,0,0))
-		self.processed_map_img.putpixel((1831,1522),(255,0,0))
-		self.processed_map_img.putpixel((1785,1402),(255,0,0))
-		self.processed_map_img.putpixel((2500,620),(0,255,0))
+					if self.processed_map_img.getpixel(self.imgpx(p)) != 255:
+						# self.processed_map_img.putpixel(p, 175)
+						self.setpx(p, 175)
 
 		if show:
 			self.processed_map_img.show()
@@ -230,15 +231,43 @@ class MapGraph:
 			n1 = self.nodes[path[i]]
 			n2 = self.nodes[path[i+1]]
 
-			self.processed_map_img.putpixel(n1.pos, (255,0,0))
-			self.processed_map_img.putpixel(n2.pos, (255,0,0))
+			self.setpx(n1.pos, (255,0,0))
+			self.setpx(n2.pos, (255,0,0))
+			# self.processed_map_img.putpixel(n1.pos, (255,0,0))
+			# self.processed_map_img.putpixel(n2.pos, (255,0,0))
 
 			px = Utils.pixels_between(n1.pos, n2.pos)
 			for p in px:
-				self.processed_map_img.putpixel(p, (255,0,0))
+				self.setpx(p, (255,0,0))
+				# self.processed_map_img.putpixel(p, (255,0,0))
 
-		self.processed_map_img.putpixel(start.pos, (0,255,0))
-		self.processed_map_img.putpixel(finish.pos, (0,255,0))
+		# self.processed_map_img.putpixel(start.pos, (0,255,0))
+		# self.processed_map_img.putpixel(finish.pos, (0,255,0))
+
+		self.processed_map_img.show()
+
+	# Only call this once, AFTER find_path
+	def draw_plan(self):
+		self.draw(False)
+		nodes = []
+		for leg in self.plan:
+			for n in leg:
+				nodes.append(n)
+
+		self.processed_map_img = self.processed_map_img.convert('RGB')
+		for i in range(len(nodes)-1):
+			n1 = self.nodes[nodes[i]]
+			n2 = self.nodes[nodes[i+1]]
+			self.setpx(n1.pos, (255,0,0))
+			px = Utils.pixels_between(n1.pos, n2.pos)
+			for p in px:
+				self.setpx(p, (255,0,0))
+
+		for b in BLUE_NODE_NAMES:
+			n = self.named_nodes[b]
+			for i in range(-2,3):
+				for j in range(-2,3):
+					self.setpx((n.pos[0]+i,n.pos[1]+j), (0,0,255))
 
 		self.processed_map_img.show()
 
@@ -279,16 +308,31 @@ class MapGraph:
 		global BLUE_NODE_NAMES
 		BLUE_NODE_NAMES = BLUE_NODE_NAMES[:len(blue_pixels)]
 		for i in range(len(blue_pixels)):
-			b = Node(blue_pixels[i], BLUE_NODE_NAMES[i])
+			pos = self.reverse_imgpx(blue_pixels[i])
+			if self.processed_map_mat[pos[0],pos[1]] == 0:
+				print "  d'oh!"
+				mindist = 99999999
+				minpos = None
+				for i2 in range(-BUFFER_RADIUS_PX, BUFFER_RADIUS_PX+1):
+					for j2 in range(-BUFFER_RADIUS_PX, BUFFER_RADIUS_PX+1):
+						altpos = (pos[0]+i2,pos[1]+j2)
+						if self.processed_map_mat[altpos[0],altpos[1]] == 0:
+							continue
+						if dist(pos, altpos) < mindist:
+							mindist = dist(pos, altpos)
+							minpos = altpos
+				pos = minpos
+
+			b = Node(pos, BLUE_NODE_NAMES[i])
 			bnodes.append(b)
 			self.add(b)
 		self.connectify(bnodes)
-		print "added blue nodes!"
+		print "added blue nodes"
 
 	# MUST add blue nodes first!
 	# start is an (x,y) tuple
 	def find_path(self, start):
-		s = Node(start, "START")
+		s = Node(self.reverse_imgpx(start), "START")
 		self.add(s)
 		self.connectify([s])
 
@@ -325,9 +369,9 @@ class MapGraph:
 		self.plan.append(paths[0][lowest_cost_path[0]])
 		for i in range(len(lowest_cost_path)-1):
 			self.plan.append(paths[lowest_cost_path[i]][lowest_cost_path[i+1]])
+		for x in range(1,len(self.plan)):
+			self.plan[x].reverse()
 		print self.plan
-
-	# TODO: make function to get cost of path lmao
 
 	def infill(self):
 		print "infilling"
@@ -350,7 +394,7 @@ class MapGraph:
 					newnode = Node((i,j))
 					self.add(newnode)
 					newnodes.append(newnode)
-		print "infill done"
+		print "infill done: " + str(len(newnodes))
 		self.connectify(newnodes)
 
 	# Writes the plan found to the specified filename
@@ -395,11 +439,32 @@ class Node:
 		self.edges.pop(other.id)
 
 
-g = MapGraph()
-g.process_map([(800,820)])
-g.init_nodes()
-g.connectify()
-#g.draw()
+def points_from_file(filename):
+	ret = []
+	with open(filename, 'rb') as csvfile:
+		read = csv.reader(csvfile, delimiter=',', quotechar='|')
+		firstrow = True
+		for row in read:
+			if firstrow:
+				firstrow = False
+				continue
+			ret.append((int(row[0]),int(row[1])))
+	return ret
+
+# reds=[
+# (2115,1415),
+# (2160,1370),
+# (2050,1310),
+# (1400,1780),
+# (1520,1830)
+# ]
+# blues=[
+# (1070,2165),
+# (1500,1715),
+# (1900,1105),
+# (2250,1515),
+# (2430,1375)
+# ]
 
 # b0 = Node((600,600), "B0")
 # b1 = Node((2350,2350), "B1")
@@ -407,17 +472,27 @@ g.connectify()
 # g.add(b1)
 # g.connectify([b0, b1])
 
-# g.draw()
-
-# g.infill()
-
 # g.draw_path(b0, b1)
-
 # print g.search(b0,b1)
 
-g.draw()
+# ARGV given RED, BLUE, START
 
-# g.add_blue([(2350,2350),(1700,2240)])
-# g.find_path((600,600))
+g = MapGraph()
+if len(sys.argv == 4):
+	g.process_map(points_from_file(sys.argv[1]))
+else:
+	g.process_map([])
 
-# g.write_to_file("out.txt")
+g.init_nodes()
+g.connectify()
+g.infill()
+
+if len(sys.argv == 4):
+	g.add_blue(points_from_file(sys.argv[2]))
+	g.find_path(points_from_file(sys.argv[3])[0])
+	g.draw_plan()
+else:
+	g.draw()
+
+g.write_to_file("out.txt")
+g.processed_map_mat.save("out.np")
