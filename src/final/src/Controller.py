@@ -18,6 +18,7 @@ points = [[(699, 620), (1034, 1070)],
 [(2094, 1900), (1684, 2250)],
 [(1684, 2250), (1764, 2316), (1826, 2427)]]
 
+global points_flat
 points_flat = None
 
 PIXELS_TO_METERS = 0.02
@@ -50,12 +51,12 @@ def angle_err(ang, start, end):
 	return ang - anglerr
 
 def get_error(point, ang, nodes):
+	global off_end
+
 	#find which node you're closest to
-	point = np.array(point)
 	mindist = 99999999
 	minnode = None
 	for i in range(len(nodes)):
-		nodes[i] = np.array(nodes[i])
 		d = dist(point, nodes[i])
 		if d < mindist:
 			mindist = d
@@ -65,6 +66,8 @@ def get_error(point, ang, nodes):
 
 	disterr = 0
 	anglerr = 0
+
+	off_end = False
 
 	i = minnode
 	if i == 0:
@@ -76,6 +79,7 @@ def get_error(point, ang, nodes):
 		disterr, anglerr = error_from_line(point, ang, nodes[i-1], nodes[i])
 		if not point_on_line(point, nodes[i-1], nodes[i]):
 			disterr = dist(point, nodes[i])
+		off_end = True
 		return (disterr, anglerr)
 
 	else:
@@ -98,11 +102,14 @@ def get_error(point, ang, nodes):
 
 
 def visualize():
-	if points_flat = None:
+	global points_flat
+	global leg 
+
+	if points_flat == None:
 		points_flat = []
-		for leg in points:
-			for n in leg:
-				points_flat = n
+		for l in points:
+			for n in l:
+				points_flat.append(n)
 
 	if path_pub.get_num_connections() > 0:
 		frame_id = 'map'
@@ -128,37 +135,60 @@ def visualize():
 def follower_cb(msg):
 	global steer
 	global reverse
+	global prevmsg
+	global preverr
+	global off_end
 
 	if prevmsg == None:
 		prevmsg = msg
+		preverr = (0,0)
 		return
 
-	pose = [(msg.pose.position.x - map_x) / PIXELS_TO_METERS,
+	pose = np.array([(msg.pose.position.x - map_x) / PIXELS_TO_METERS,
 			(msg.pose.position.y - map_y) / PIXELS_TO_METERS,
-			Utils.quaternion_to_angle(msg.pose.orientation)]
+			Utils.quaternion_to_angle(msg.pose.orientation)])
 
-	posepx = [int(pose[0]), int(pose[1]), pose[2]]
+	posepx = [int(pose[0]), int(pose[1])]
+
+
+	if dist(posepx, points[leg][-1]) < 10:
+		leg += 1
+
+
+	steer_mod = 0
+	reverse_mod = False
+	if image_processor.red_count > 20:
+		steer_mod += 0.001 * image_processor.red_dist * image_processor.red_center
+		if image_processor.red_dist > 0.9 and math.abs(image_processor.red_center) < 0.2:
+			reverse_mod = True
+
+	if image_processor.blue_count > 20:
+		steer_mod += -0.002 * image_processor.blue_dist * image_processor.blue_center
+
 
 	dist, angle = get_error(pose[0:2], pose[2], points[leg])
 	angle += np.pi
 	angle = angle % (np.pi*2)
 	angle -= np.pi
 
-	print dist, angle
-
 	del_t = np.float64(msg.header.stamp.secs - prevmsg.header.stamp.secs)
 	del_t += np.float64((msg.header.stamp.nsecs - prevmsg.header.stamp.nsecs)/1000000000.0)
 	del_dist = (dist - preverr[0]) / del_t
 
-	steer = dist * 0.05 + del_dist * 0.01
+	steer = dist * 0.05 + del_dist * 0.075
 	
 	if angle < -np.pi/2:
 		steer = 0.4
 	elif angle > np.pi/2:
 		steer = -0.4
 
-	if allowed[pose[0],pose[1]] == 0:
-		reverse = True
+	reverse = allowed[posepx[1],posepx[0]] == 0
+	reverse = reverse or off_end
+
+	print dist, angle, reverse
+
+	steer += steer_mod
+	reverse = reverse or reverse_mod
 
 	preverr = (dist, angle)
 
@@ -172,8 +202,18 @@ if __name__ == '__main__':
 	global leg
 	global prevmsg
 	global preverr
+	global reverse
+	global off_end
 
 	leg = 0
+	reverse = False
+	prevmsg = None
+	preverr = None
+	off_end = False
+
+	for l in points:
+		for i in range(len(l)):
+			l[i] = np.array((l[i][1], l[i][0]))
 
 	rospy.init_node("follower", anonymous=True)
 
@@ -186,7 +226,9 @@ if __name__ == '__main__':
 	image_processor = ImageProcessor(None)
 	image_sub = rospy.Subscriber(rospy.get_param("~image_topic", "/camera/color/image_raw"), Image, image_processor.image_cb, queue_size=1)
 
-	allowed = np.load("out.npy")
+	allowed = np.load("/home/nvidia/catkin_ws/src/final/src/out.npy")
+	for asdf in range(0,3200,50):
+		print allowed[asdf,asdf]
 
 	map_service_name = rospy.get_param("~static_map", "static_map")
 	print("Getting map from service: ", map_service_name)
@@ -202,7 +244,6 @@ if __name__ == '__main__':
 
 	i = 0
 	while not rospy.is_shutdown():
-		#drive forward with constant speed and lf.angle
 		i += 1
 		i = i % 10
 		if i == 0:

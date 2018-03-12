@@ -24,7 +24,7 @@ class ImageProcessor:
 		self.pub_red = rospy.Publisher("/lf/viz/masked_red", Image, queue_size = 1)
 		self.pub_blue = rospy.Publisher("/lf/viz/masked_blue", Image, queue_size = 1)
 
-		#dist goes from 0 (TODO m) to 1 (TODO m)
+		#dist goes from 0 (far) to 1 (close)
 		#center goes from -1 (far left of FOV) to 1 (far right of FOV); if it isn't seen, center is 0 
 		self.red_dist = 0
 		self.red_center = 0
@@ -74,13 +74,16 @@ class ImageProcessor:
 		#calculate center of the region of interest (error)
 		res = np.nonzero(crop_red)
 		center = float(sum(res[1]))/(len(res[1]) + 0.0001)
+		height = float(max(res[0]))
 		self.red_count = len(res[1])
 
 		#update error values
 		self.red_prev = self.red_center
 		self.red_center = center*2 / msg.width - 1
+		self.red_dist = height / 175
 		if self.red_count == 0:
 			self.red_center = 0
+			self.red_dist = 1
 		self.red_del = (self.red_center - self.red_prev) / del_t
 
 		#publish cropped image
@@ -95,13 +98,16 @@ class ImageProcessor:
 		#calculate center of the region of interest (error)
 		res = np.nonzero(crop_blue)
 		center = float(sum(res[1]))/(len(res[1]) + 0.0001)
+		height = float(max(res[0]))
 		self.blue_count = len(res[1]) != 0
 
 		#update error values
 		self.blue_prev = self.blue_center
 		self.blue_center = center*2 / msg.width - 1
+		self.blue_dist = height / 175
 		if self.blue_count == 0:
 			self.blue_center = 0
+			self.blue_dist = 1
 		self.blue_del = (self.blue_center - self.blue_prev) / del_t
 
 		#publish cropped image
