@@ -483,9 +483,9 @@ if len(sys.argv) == 4:
 else:
 	g.process_map([])
 
-g.init_nodes()
-g.connectify()
-g.infill()
+# g.init_nodes()
+# g.connectify()
+# g.infill()
 
 if len(sys.argv) == 4:
 	g.add_blue(points_from_file(sys.argv[2]))
@@ -495,4 +495,4 @@ else:
 	g.draw()
 
 g.write_to_file("out.txt")
-np.save("out.np", g.processed_map_mat)
+np.save("out.npy", g.processed_map_mat)

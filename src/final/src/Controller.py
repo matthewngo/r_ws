@@ -11,17 +11,18 @@ from ImageProcessing import ImageProcessor
 from nav_msgs.msg import Path
 
 # points = [[(609, 593), (1788, 2010), (2000, 1978)]]
-points = [[(593, 609), (2010, 1788), (1978, 2000)]]
-# map_x = None
-# map_y = None
+# points = [[(593, 609), (2010, 1788), (1978, 2000)]]
+points = [[(699, 620), (1034, 1070)],
+[(1034, 1070), (1379, 1504), (1484, 1500)],
+[(1484, 1500), (1591, 1758), (1888, 2032), (2094, 1900)],
+[(2094, 1900), (1684, 2250)],
+[(1684, 2250), (1764, 2316), (1826, 2427)]]
+
+points_flat = None
 
 PIXELS_TO_METERS = 0.02
 
-# curr = points[0]
-# nxt = points[1]
-
 steer = 0
-
 
 def dist(a,b):
 	return math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2)
@@ -97,27 +98,46 @@ def get_error(point, ang, nodes):
 
 
 def visualize():
+	if points_flat = None:
+		points_flat = []
+		for leg in points:
+			for n in leg:
+				points_flat = n
+
 	if path_pub.get_num_connections() > 0:
 		frame_id = 'map'
 		pa = Path()
 		pa.header = Utils.make_header(frame_id)
 		pa.poses = []
-		for leg in points:
-			for n in leg:
-				n2 = [n[0] * PIXELS_TO_METERS + map_x, n[1] * PIXELS_TO_METERS + map_y, 0]
-				pa.poses.append(Utils.particle_to_posestamped(n2, str(frame_id)))
+		for n in points_flat:
+			n2 = [n[0] * PIXELS_TO_METERS + map_x, n[1] * PIXELS_TO_METERS + map_y, 0]
+			pa.poses.append(Utils.particle_to_posestamped(n2, str(frame_id)))
 		path_pub.publish(pa)
+
+	if leg_pub.get_num_connections() > 0:
+		frame_id = 'map'
+		pa = Path()
+		pa.header = Utils.make_header(frame_id)
+		pa.poses = []
+		for n in points[leg]:
+			n2 = [n[0] * PIXELS_TO_METERS + map_x, n[1] * PIXELS_TO_METERS + map_y, 0]
+			pa.poses.append(Utils.particle_to_posestamped(n2, str(frame_id)))
+		leg_pub.publish(pa)
 
 
 def follower_cb(msg):
 	global steer
+	global reverse
+
+	if prevmsg == None:
+		prevmsg = msg
+		return
+
 	pose = [(msg.pose.position.x - map_x) / PIXELS_TO_METERS,
 			(msg.pose.position.y - map_y) / PIXELS_TO_METERS,
 			Utils.quaternion_to_angle(msg.pose.orientation)]
 
-	# pose[2] = pose[2] * 180.0 / math.pi
-
-	leg = 0
+	posepx = [int(pose[0]), int(pose[1]), pose[2]]
 
 	dist, angle = get_error(pose[0:2], pose[2], points[leg])
 	angle += np.pi
@@ -126,13 +146,21 @@ def follower_cb(msg):
 
 	print dist, angle
 
-	steer = dist * 0.05
+	del_t = np.float64(msg.header.stamp.secs - prevmsg.header.stamp.secs)
+	del_t += np.float64((msg.header.stamp.nsecs - prevmsg.header.stamp.nsecs)/1000000000.0)
+	del_dist = (dist - preverr[0]) / del_t
+
+	steer = dist * 0.05 + del_dist * 0.01
 	
 	if angle < -np.pi/2:
 		steer = 0.4
 	elif angle > np.pi/2:
 		steer = -0.4
 
+	if allowed[pose[0],pose[1]] == 0:
+		reverse = True
+
+	preverr = (dist, angle)
 
 
 if __name__ == '__main__':
@@ -141,6 +169,12 @@ if __name__ == '__main__':
 	global image_processor
 	global path_pub
 	global allowed
+	global leg
+	global prevmsg
+	global preverr
+
+	leg = 0
+
 	rospy.init_node("follower", anonymous=True)
 
 	pose_sub  = rospy.Subscriber("/pf/viz/inferred_pose",
@@ -152,7 +186,7 @@ if __name__ == '__main__':
 	image_processor = ImageProcessor(None)
 	image_sub = rospy.Subscriber(rospy.get_param("~image_topic", "/camera/color/image_raw"), Image, image_processor.image_cb, queue_size=1)
 
-	
+	allowed = np.load("out.npy")
 
 	map_service_name = rospy.get_param("~static_map", "static_map")
 	print("Getting map from service: ", map_service_name)
@@ -162,6 +196,7 @@ if __name__ == '__main__':
 	map_y = map_msg.info.origin.position.y
 
 	path_pub = rospy.Publisher("/viz/plan", Path, queue_size = 1)
+	leg_pub = rospy.Publisher("/viz/leg", Path, queue_size = 1)
 
 	visualize()
 
@@ -177,8 +212,12 @@ if __name__ == '__main__':
 		msg.header.stamp = rospy.Time.now()
 		msg.header.frame_id = "base_link"
 
-		msg.drive.steering_angle = steer
-		msg.drive.speed = 1
+		if reverse:
+			msg.drive.steering_angle = -steer
+			msg.drive.speed = -1
+		else: 
+			msg.drive.steering_angle = steer
+			msg.drive.speed = 1
 			
 		pub_drive.publish(msg)
 
