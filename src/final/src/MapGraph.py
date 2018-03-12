@@ -40,11 +40,9 @@ FILTER_DENS = 5 #px
 BUFFER_RADIUS_M = (0.7 * CAR_LENGTH) #m
 BUFFER_RADIUS_PX = px(BUFFER_RADIUS_M) #px
 INITIAL_NODE_COVERAGE = 0.0005
-RED_RADIUS_M = 0.3 + BUFFER_RADIUS_M #m
+RED_RADIUS_M = 0.4 + BUFFER_RADIUS_M #m
 RED_RADIUS_PX = px(RED_RADIUS_M) #px
 INFILL_RADIUS = 30 #px
-
-DEBUG_USE_IMAGES = True
 
 
 class MapGraph:
@@ -494,5 +492,5 @@ if len(sys.argv) == 4:
 else:
 	g.draw()
 
-g.write_to_file("out.txt")
-np.save("out.npy", g.processed_map_mat)
+g.write_to_file("sieg3x.txt")
+np.save("sieg3x.npy", g.processed_map_mat)
