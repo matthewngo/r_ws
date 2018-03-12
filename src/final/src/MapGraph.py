@@ -39,10 +39,10 @@ FILTER_RADIUS = 5 #px
 FILTER_DENS = 5 #px
 BUFFER_RADIUS_M = (0.7 * CAR_LENGTH) #m
 BUFFER_RADIUS_PX = px(BUFFER_RADIUS_M) #px
-INITIAL_NODE_COVERAGE = 0.0015
+INITIAL_NODE_COVERAGE = 0.0005
 RED_RADIUS_M = 0.3 + BUFFER_RADIUS_M #m
 RED_RADIUS_PX = px(RED_RADIUS_M) #px
-INFILL_RADIUS = 50 #px
+INFILL_RADIUS = 30 #px
 
 DEBUG_USE_IMAGES = True
 
@@ -478,7 +478,7 @@ def points_from_file(filename):
 # ARGV given RED, BLUE, START
 
 g = MapGraph()
-if len(sys.argv == 4):
+if len(sys.argv) == 4:
 	g.process_map(points_from_file(sys.argv[1]))
 else:
 	g.process_map([])
@@ -487,7 +487,7 @@ g.init_nodes()
 g.connectify()
 g.infill()
 
-if len(sys.argv == 4):
+if len(sys.argv) == 4:
 	g.add_blue(points_from_file(sys.argv[2]))
 	g.find_path(points_from_file(sys.argv[3])[0])
 	g.draw_plan()
@@ -495,4 +495,4 @@ else:
 	g.draw()
 
 g.write_to_file("out.txt")
-g.processed_map_mat.save("out.np")
+np.save("out.np", g.processed_map_mat)
