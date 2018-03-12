@@ -165,9 +165,13 @@ if __name__ == '__main__':
 
 	visualize()
 
+	i = 0
 	while not rospy.is_shutdown():
 		#drive forward with constant speed and lf.angle
-
+		i += 1
+		i = i % 10
+		if i == 0:
+			visualize()
 
 		msg = AckermannDriveStamped()
 		msg.header.stamp = rospy.Time.now()

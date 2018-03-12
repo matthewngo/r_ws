@@ -3,9 +3,7 @@ To do:
 Actually implement the control scheme
 Make sure it runs fast enough (10hz = particle filter)
 
-Test path search
 >>>>Tune particle filter!!!
-Make sure it gives reasonable results for the overall path choices
 
 
 
