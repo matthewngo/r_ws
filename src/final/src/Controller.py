@@ -25,6 +25,9 @@ PIXELS_TO_METERS = 0.02
 
 steer = 0
 
+def distalt(a,b):
+	return dist(a,b)
+
 def dist(a,b):
 	return math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2)
 
@@ -72,32 +75,32 @@ def get_error(point, ang, nodes):
 	i = minnode
 	if i == 0:
 		disterr, anglerr = error_from_line(point, ang, nodes[0], nodes[1])
-		if not point_on_line(point, nodes[0], nodes[1]):
-			disterr = dist(point, nodes[0])
+		# if not point_on_line(point, nodes[0], nodes[1]):
+		# 	disterr = dist(point, nodes[0])
 		return (disterr, anglerr)
 	if i == len(nodes)-1:
 		disterr, anglerr = error_from_line(point, ang, nodes[i-1], nodes[i])
 		if not point_on_line(point, nodes[i-1], nodes[i]):
-			disterr = dist(point, nodes[i])
-		off_end = True
+		# 	disterr = dist(point, nodes[i])
+			off_end = True
 		return (disterr, anglerr)
 
 	else:
 		onprev = point_on_line(point, nodes[i-1], nodes[i])
 		onnext = point_on_line(point, nodes[i], nodes[i+1])
 		if onprev == onnext:
-			disterr, anglerr = error_from_line(point, ang, nodes[i-1], nodes[i+1])
-			disterr = dist(point, nodes[i])
-			return (disterr, anglerr)
+			disterr1, a = error_from_line(point, ang, nodes[i-1], nodes[i])
+			disterr2, a = error_from_line(point, ang, nodes[i], nodes[i+1])
+			return (disterr2, angle_err(ang, nodes[i-1], nodes[i+1]))
 		elif onprev:
 			disterr,anglerr = error_from_line(point, ang, nodes[i-1], nodes[i])
-			if not point_on_line(point, nodes[i-1], nodes[i]):
-				disterr = dist(point, nodes[i])
+			# if not point_on_line(point, nodes[i-1], nodes[i]):
+			# 	disterr = dist(point, nodes[i])
 			return (disterr, anglerr)
 		else:
 			disterr,anglerr = error_from_line(point, ang, nodes[i], nodes[i+1])
-			if not point_on_line(point, nodes[i], nodes[i]+1):
-				disterr = dist(point, nodes[i])
+			# if not point_on_line(point, nodes[i], nodes[i]+1):
+			# 	disterr = dist(point, nodes[i])
 			return (disterr, anglerr)
 
 
@@ -138,6 +141,7 @@ def follower_cb(msg):
 	global prevmsg
 	global preverr
 	global off_end
+	global leg
 
 	if prevmsg == None:
 		prevmsg = msg
@@ -151,12 +155,13 @@ def follower_cb(msg):
 	posepx = [int(pose[0]), int(pose[1])]
 
 
-	if dist(posepx, points[leg][-1]) < 10:
+	if distalt(posepx, points[leg][-1]) < 10:
 		leg += 1
 
 
 	steer_mod = 0
 	reverse_mod = False
+	"""
 	if image_processor.red_count > 20:
 		steer_mod += 0.001 * image_processor.red_dist * image_processor.red_center
 		if image_processor.red_dist > 0.9 and math.abs(image_processor.red_center) < 0.2:
@@ -164,7 +169,7 @@ def follower_cb(msg):
 
 	if image_processor.blue_count > 20:
 		steer_mod += -0.002 * image_processor.blue_dist * image_processor.blue_center
-
+	"""
 
 	dist, angle = get_error(pose[0:2], pose[2], points[leg])
 	angle += np.pi
@@ -175,7 +180,7 @@ def follower_cb(msg):
 	del_t += np.float64((msg.header.stamp.nsecs - prevmsg.header.stamp.nsecs)/1000000000.0)
 	del_dist = (dist - preverr[0]) / del_t
 
-	steer = dist * 0.05 + del_dist * 0.075
+	steer = dist * 0.04 + del_dist * 0.06
 	
 	if angle < -np.pi/2:
 		steer = 0.4
@@ -205,7 +210,7 @@ if __name__ == '__main__':
 	global reverse
 	global off_end
 
-	leg = 0
+	leg = 2
 	reverse = False
 	prevmsg = None
 	preverr = None
@@ -223,12 +228,10 @@ if __name__ == '__main__':
 	pub_drive = rospy.Publisher("/vesc/high_level/ackermann_cmd_mux/input/nav_0",
 		AckermannDriveStamped, queue_size = 1)
 
-	image_processor = ImageProcessor(None)
-	image_sub = rospy.Subscriber(rospy.get_param("~image_topic", "/camera/color/image_raw"), Image, image_processor.image_cb, queue_size=1)
+	image_processor = ImageProcessor()
+	image_sub = rospy.Subscriber("/camera/color/image_raw", Image, image_processor.image_cb, queue_size=1)
 
 	allowed = np.load("/home/nvidia/catkin_ws/src/final/src/out.npy")
-	for asdf in range(0,3200,50):
-		print allowed[asdf,asdf]
 
 	map_service_name = rospy.get_param("~static_map", "static_map")
 	print("Getting map from service: ", map_service_name)
@@ -255,10 +258,10 @@ if __name__ == '__main__':
 
 		if reverse:
 			msg.drive.steering_angle = -steer
-			msg.drive.speed = -1
+			msg.drive.speed = -0.5
 		else: 
 			msg.drive.steering_angle = steer
-			msg.drive.speed = 1
+			msg.drive.speed = 0.5
 			
 		pub_drive.publish(msg)
 

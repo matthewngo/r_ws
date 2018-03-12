@@ -10,13 +10,7 @@ from cv_bridge import CvBridge, CvBridgeError
 
 class ImageProcessor:
 
-	def __init__(self, state_lock=None):
-		#initialize stuff
-		if state_lock is None:
-			self.state_lock = Lock()
-		else:
-			self.state_lock = state_lock
-
+	def __init__(self):
 		self.bridge = CvBridge()
 
 		self.prev_msg = None
@@ -40,12 +34,9 @@ class ImageProcessor:
 
 
 	def image_cb(self, msg):
-		self.state_lock.acquire()
-
 		#the first time, just take in the message and return
 		if(self.prev_msg == None):
 			self.prev_msg = msg
-			self.state_lock.release()
 			return
 
 		#image processing:
@@ -74,7 +65,10 @@ class ImageProcessor:
 		#calculate center of the region of interest (error)
 		res = np.nonzero(crop_red)
 		center = float(sum(res[1]))/(len(res[1]) + 0.0001)
-		height = float(max(res[0]))
+		if len(res[1]) > 0:
+			height = float(max(res[0]))
+		else:
+			height = 0
 		self.red_count = len(res[1])
 
 		#update error values
@@ -98,7 +92,10 @@ class ImageProcessor:
 		#calculate center of the region of interest (error)
 		res = np.nonzero(crop_blue)
 		center = float(sum(res[1]))/(len(res[1]) + 0.0001)
-		height = float(max(res[0]))
+		if len(res[1]) > 0:
+			height = float(max(res[0]))
+		else:
+			height = 0
 		self.blue_count = len(res[1]) != 0
 
 		#update error values
@@ -118,6 +115,3 @@ class ImageProcessor:
 		self.pub_blue.publish(newmsg)
 
 		self.prev_msg = msg
-
-		self.state_lock.release()
-
